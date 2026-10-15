@@ -228,6 +228,108 @@
             outline: 2px solid #5a1a00;
             outline-offset: 2px;
         }
+        /* Filtro de fontes */
+        .filtro-fontes {
+            margin: -12px 0 26px;
+        }
+        .filtro-topo {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button.filtro-botao {
+            background-color: #2a2a35;
+            border-color: #a68c5b;
+            color: #eaddc5;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        button.filtro-botao:hover {
+            background-color: #3a3a48;
+        }
+        button.filtro-botao.ativo {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        button:focus-visible {
+            outline: 3px solid #ffd700;
+            outline-offset: 2px;
+        }
+        .filtro-resumo {
+            font-size: 13px;
+            color: #999;
+            margin: 10px 0 0;
+        }
+        .lista-fontes {
+            margin-top: 14px;
+            padding: 16px 18px;
+            background: #1f1f28;
+            border: 1px solid #5a4a2a;
+            border-radius: 8px;
+            text-align: left;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+        .lista-fontes[hidden] {
+            display: none;
+        }
+        .grupo-fontes {
+            border: none;
+            margin: 0 0 14px;
+            padding: 0;
+        }
+        .grupo-fontes legend {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 6px;
+            padding: 0;
+        }
+        .grupo-itens {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2px 18px;
+        }
+        .grupo-fontes label {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 14px;
+            color: #ddd;
+            padding: 4px 0;
+            cursor: pointer;
+            line-height: 1.35;
+        }
+        .grupo-fontes input {
+            accent-color: #ffd700;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .grupo-fontes .qtd {
+            color: #888;
+            font-size: 12px;
+        }
+        .lista-acoes {
+            text-align: right;
+        }
+        button.link-botao {
+            background: none;
+            border: none;
+            box-shadow: none;
+            color: #c9b458;
+            text-decoration: underline;
+            padding: 4px;
+            font-size: 13px;
+            font-weight: normal;
+        }
+        button.link-botao:hover {
+            background: none;
+            transform: none;
+        }
+        .botoes button.vazio {
+            opacity: 0.4;
+        }
         .creditos {
             font-size: 11px;
             color: #666;
@@ -277,13 +379,22 @@
             <p>Mestre, defina a raridade da sua busca e deixe os deuses rolarem os dados!</p>
             
             <div class="botoes">
-                <button onclick="rolarItem('comum')">Comum</button>
-                <button onclick="rolarItem('incomum')">Incomum</button>
-                <button onclick="rolarItem('raro')">Raro</button>
-                <button onclick="rolarItem('muitoRaro')">Muito Raro</button>
-                <button onclick="rolarItem('lendario')">Lendário</button>
-                <button onclick="rolarItem('artefato')">Artefato</button>
-                <button class="variavel" onclick="rolarItem('variavel')">Raridade Variável</button>
+                <button data-raridade="comum" onclick="rolarItem('comum')">Comum</button>
+                <button data-raridade="incomum" onclick="rolarItem('incomum')">Incomum</button>
+                <button data-raridade="raro" onclick="rolarItem('raro')">Raro</button>
+                <button data-raridade="muitoRaro" onclick="rolarItem('muitoRaro')">Muito Raro</button>
+                <button data-raridade="lendario" onclick="rolarItem('lendario')">Lendário</button>
+                <button data-raridade="artefato" onclick="rolarItem('artefato')">Artefato</button>
+                <button class="variavel" data-raridade="variavel" onclick="rolarItem('variavel')">Raridade Variável</button>
+            </div>
+
+            <div class="filtro-fontes">
+                <div class="filtro-topo">
+                    <button type="button" id="botao-todas" class="filtro-botao ativo" aria-pressed="true" onclick="marcarTodasAsFontes()">Todas as fontes</button>
+                    <button type="button" id="botao-escolher" class="filtro-botao" aria-expanded="false" aria-controls="lista-fontes" onclick="alternarListaDeFontes()">Escolher fontes</button>
+                </div>
+                <p id="resumo-fontes" class="filtro-resumo">Usando todas as fontes</p>
+                <div id="lista-fontes" class="lista-fontes" hidden></div>
             </div>
 
             <div id="resultado">Perdêncio aguarda sua escolha...</div>
@@ -294,7 +405,7 @@
                 As descrições completas vêm do SRD 5.1 da Wizards of the Coast LLC, disponível em
                 <a href="https://dnd.wizards.com/resources/systems-reference-document">dnd.wizards.com</a> e licenciado sob a
                 <a href="https://creativecommons.org/licenses/by/4.0/legalcode">Creative Commons Attribution 4.0</a>.
-                Para os demais itens, o site indica o livro e traz um link de busca no D&amp;D Beyond,
+                Os demais itens indicam o livro de origem e trazem um link de busca no D&amp;D Beyond,
                 onde o texto completo aparece para quem tem o livro na conta.
             </div>
         </div>
@@ -3590,6 +3701,445 @@
             ]
         };
 
+        // ==========================================
+        // RESUMOS
+        // ==========================================
+        // Para os itens que não estão no SRD: um resumo do que o item faz, escrito para este site.
+        // Nos itens com várias versões, o resumo do item principal aparece antes do resumo da versão.
+        const resumos = {
+            "Abracadabrus": "Baú de madeira enfeitado, de 11 kg, com 20 cargas. Com uma ação e 1 carga, quem toca a tampa fechada pede objetos não mágicos (comida, bebida, materiais) que somem até 1 po e caibam lá dentro, e eles aparecem. A comida estraga em 24 horas e joias ou metais preciosos somem em 1 minuto. Recupera 1d20 cargas ao amanhecer; ao gastar a última, role 1d20: com 1, perde a magia.",
+            "Acendedor de Lâmpadas": "Com uma ação, acende ou apaga na hora uma vela, tocha, fogueira pequena ou chama parecida que esteja a até 3 metros.",
+            "Adaga Cerimonial de Rakdos": "Adaga +1 que prende a alma de quem ela matar (só Desejo traz a vítima de volta), guardando até cinco almas. Cada alma presa dá 1d4 de dano necrótico extra aos seus ataques com ela. Com uma ação bônus, você pode libertar almas para recuperar 1d10 pontos de vida por alma, e com cinco almas presas ganha um poder de aniquilação.",
+            "Adaga Dente de Dragão": "Adaga +1 que causa 1d6 de dano ácido extra. Contra membros do Culto do Dragão, o bônus sobe para +2 e o dano ácido extra para 2d6.",
+            "Afogadora": "Tridente +1 sempre frio, imune a dano enquanto está na água, que causa 1d8 de frio extra. Sintonizado, você fala aquano, tem resistência a frio e pode conjurar Dominar Monstro em elementais da água, entre outros poderes ligados à água.",
+            "Agulha de Conserto": "Parece uma agulha de costura, mas com uma ação bônus e a palavra de comando vira uma adaga +1 (e volta a ser agulha do mesmo jeito). Enquanto a segura, você pode conjurar o truque Consertar com uma ação.",
+            "Alaúde de Doss": "Magias próprias deste instrumento: Amizade Animal, Proteção contra Energia (só fogo) e Proteção contra Veneno.",
+            "Almofada de Lírio": "Folha mágica de 3 metros que serve de veículo. Anda, voa e nada a 6 metros, pode pairar e segue as direções que você fala enquanto está em cima dela. Carrega até 135 kg sem perder velocidade.",
+            "Almofariz e Pilão de Baba Yaga": "As ferramentas da bruxa Baba Yaga, sintonizadas como um artefato só. O pilão serve de arma e de ferramenta perfeita, e o almofariz vira um veículo voador que você conduz; juntos, também moem ingredientes para criar efeitos mágicos. Tem propriedades aleatórias de artefato (duas benéficas menores, uma benéfica maior e uma prejudicial menor).",
+            "Ametista Magnética": "Enquanto a carrega, você tem vantagem em testes de resistência de Força. Tem 6 cargas (recupera 1d6 ao amanhecer): com uma ação bônus e 1 carga você voa por 10 minutos, com deslocamento de voo igual ao normal e podendo pairar, e com mais cargas pode conjurar Gravidade Reversa.",
+            "Amuleto de Comandar Plantas": "Tem 3 cargas e recupera todas ao amanhecer. Com uma ação e 1 carga, conjura Falar com Plantas, e durante a magia você tem vantagem nos testes de Carisma para influenciar as plantas.",
+            "Amuleto do Bêbado": "Uma vez por dia, quando você bebe meio litro de cerveja, destilado, hidromel ou vinho, recupera 4d4 + 4 pontos de vida. Volta a funcionar ao amanhecer.",
+            "Amuleto do Devoto": "Símbolo sagrado que dá +1, +2 ou +3 (conforme a raridade) nas jogadas de ataque com magia e na CD das suas magias. Uma vez por descanso longo, você usa Canalizar Divindade sem gastar um dos usos.",
+            "Amuleto do Fragmento Negro": "Serve de foco arcano para magias de bruxo. Uma vez por descanso longo, você pode tentar conjurar um truque de bruxo que não conhece com um teste de Inteligência (Arcanismo) CD 10; se falhar, a ação é perdida.",
+            "Amuleto Relógio": "Uma vez por dia, em vez de rolar o d20 de uma jogada de ataque, você pode considerar que tirou 10. Volta a funcionar ao amanhecer.",
+            "Anel da Amizade": "Ao se sintonizar, você cria um vínculo com uma criatura voluntária que tocar. Enquanto o vínculo durar, sempre que uma magia ou efeito curar você, ela também recebe a cura. Dá para trocar de criatura ao fim de cada descanso longo.",
+            "Anel de Identificar a Verdade": "Dá vantagem nos testes de Sabedoria (Intuição) para perceber se alguém está mentindo para você.",
+            "Anel de Obscuração": "Tem 4 cargas e recupera 1d4 ao amanhecer. Com uma ação e 1 carga, conjura Névoa Obscurecente centrada em você, que acompanha seus movimentos e dura 1 minuto sem exigir concentração.",
+            "Anel de Salvação Temporal": "Se você morrer usando o anel, some e reaparece num espaço livre a até 1,5 metro, vivo, com 3d6 + Constituição pontos de vida. Isso só acontece uma vez: o anel se despedaça em seguida.",
+            "Aniquilador de Topázio": "Arma de duas mãos parecida com um mosquete, movida por uma escama de dragão de topázio em vez de munição (alcance 45/90 metros). Causa 2d6 de dano necrótico, e se esse dano levar uma criatura ou objeto a 0 pontos de vida, o alvo vira pó.",
+            "Aparato de Mizzium": "Aparelho de 3,5 kg que serve de foco arcano para bruxos, feiticeiros e magos. Com ele, você pode tentar conjurar uma magia da sua lista que não conhece ou não preparou, gastando o espaço normal, com um teste de Inteligência (Arcanismo) CD 10 + o dobro do nível da magia. Se falhar, sai uma magia diferente, sorteada na tabela do item.",
+            "Arco da Asa do Dragão": "Arco ligado a um tipo de sopro de dragão (ácido, frio, fogo, eletricidade, veneno etc.). Cada acerto com ele causa 1d6 de dano extra desse tipo.",
+            "Arco da Deusa da Natureza": "Arco +3 que não sofre desvantagem a longa distância e faz crítico com 18, 19 ou 20. Se você venera um deus da natureza, ganha mais poderes conforme sobe de nível, incluindo propriedades de artefato.",
+            "Arma da Fúria do Dragão Adormecido": "Arma com o poder do sopro de um dragão. Sempre que você tira 20 no d20 de um ataque com ela, as criaturas que você escolher a até 1,5 metro do alvo sofrem 5 de dano do tipo de sopro do dragão.",
+            "Arma da Fúria do Dragão Ascendente": "Arma +3 com o poder do sopro de um dragão. Cada acerto causa dano extra do tipo do sopro, quando você tira 20 no d20 as criaturas que escolher a até 1,5 metro do alvo também sofrem dano, e no estágio máximo a arma libera um sopro em cone poderoso uma vez por dia.",
+            "Arma da Fúria do Dragão Desperto": "Arma +1 com o poder do sopro de um dragão. Cada acerto causa 1d6 de dano extra do tipo do sopro, e quando você tira 20 no d20, as criaturas que escolher a até 1,5 metro do alvo sofrem 5 de dano desse tipo.",
+            "Arma da Fúria do Dragão Vígil": "Arma +2 com o poder do sopro de um dragão. Cada acerto causa 2d6 de dano extra do tipo do sopro, e quando você tira 20 no d20 as criaturas que escolher a até 1,5 metro do alvo também sofrem dano desse tipo. Nesse estágio, a arma também libera um sopro em cone uma vez por dia.",
+            "Arma da Morte Certa": "Quando você causa dano a uma criatura com esta arma, ela não consegue recuperar pontos de vida até o início do seu próximo turno.",
+            "Arma de Alerta": "Com ela por perto, você tem vantagem na iniciativa, e nem você nem os companheiros a até 9 metros podem ser surpreendidos, a menos que estejam incapacitados por algo além de sono comum. Se um combate começar, ela acorda todos que estiverem dormindo nesse alcance.",
+            "Arma de Byeshk": "Arma feita de byeshk, um metal raro. Ao acertar uma aberração, causa 1d6 de dano extra do mesmo tipo da arma, e a criatura não recupera pontos de vida até o início do próximo turno dela.",
+            "Arma de Fogo Infernal": "Arma de ferro infernal com veios vermelhos que dão penumbra em 1,5 metro. Um humanoide morto por ela tem a alma levada ao rio Estige, onde renasce na hora como um lêmure.",
+            "Arma Faminta": "Arma viva de carne e osso. Quem a empunha sem estar sintonizado tem desvantagem nos ataques e, se você estiver sintonizado, o cabo solta espinhos que causam 1d4 de dano perfurante por turno a quem tentar segurá-la. Ela se agarra à sua mão e você só a solta usando uma ação para desfazer o vínculo.",
+            "Armadura Ardente": "Enquanto você a veste, a armadura solta fiapos de fumaça que não fazem mal nem têm cheiro. Fora isso, é uma armadura comum do tipo escolhido.",
+            "Armadura Brilhante": "Armadura média ou pesada que nunca fica suja.",
+            "Armadura da Libertação": "Você consegue tirá-la gastando só uma ação, em vez do tempo normal para remover uma armadura.",
+            "Armadura da Última Posição": "Armadura +1 que brilha de leve. Se você morrer usando-a, ela se destrói e cada celestial, fada e corruptor a até 9 metros faz um teste de Carisma CD 22 ou é banido para o plano de origem.",
+            "Armadura de Mizzium": "Armadura média ou pesada reforçada com mizzium. Acertos críticos contra você viram acertos normais, e quando um efeito mágico permite um teste de Força ou Constituição para sofrer metade do dano, você não sofre dano nenhum se passar.",
+            "Armadura de Placas do Dragão de Obsidiana": "Armadura de placas com +2 na CA e resistência a veneno. Você também tem vantagem nos testes de habilidade e de resistência para evitar ou escapar de ser agarrado.",
+            "Armadura do Marinheiro": "Dá deslocamento de natação igual ao seu deslocamento a pé. Se você começar o turno debaixo d'água com 0 pontos de vida, a armadura faz você subir 18 metros em direção à superfície.",
+            "Armadura Motorizada": "Armadura de placas tecnológica que recebe 10 cargas de uma célula de energia e funciona como placas comum mesmo sem carga. Com uma ação, você gasta cargas e a ativa por 1 hora por carga; ativa, dá vantagem em testes e testes de resistência de Força, mais força de carga e os outros sistemas do traje.",
+            "Arquivo de Astromancia": "Disco de anéis que vira uma esfera e funciona como grimório e foco arcano de mago. Traz as magias Augúrio, Adivinhação, Encontrar o Caminho, Sexto Sentido, Localizar Criatura e Localizar Objeto. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de adivinhação do arquivo, e outra, como reação, obriga uma criatura a até 9 metros a rolar 1d4 e somar ou subtrair o resultado (você escolhe) num ataque, teste ou teste de resistência.",
+            "Arreio Infernal": "Arreio para pesadelos, que só sintoniza com criaturas de tendência má. O pesadelo equipado com ele serve você até a morte ou o fim da sintonia: com uma ação você o chama, e ele chega no começo do seu próximo turno a 6 metros, ficando por 1 dia ou até você dispensá-lo.",
+            "Árvore do Luto": "Árvore gigante de mármore branco, com toneladas. Sintonizado e a até 36 metros dela, com uma ação você faz os galhos agarrarem uma criatura a até 6 metros da árvore: teste de Destreza CD 24 ou ela é presa, sofre 6d6 de dano perfurante e fica atordoada.",
+            "Astrolábio Espacial": "Dentro de um sistema espacial, acompanha sozinho a posição de todas as estrelas, planetas e corpos celestes e projeta um mapa holográfico deles acima de você, com um ponto de luz marcando onde o astrolábio está.",
+            "Atlas do Horizonte Infinito": "Grimório e foco arcano de mago com Vórtice Distorcido, Porta Dimensional, Portal, Passo Nebuloso, Viagem Planar, Círculo de Teletransporte e Palavra de Recordação. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de conjuração do livro, e outra, quando você sofre dano, permite se teleportar uma curta distância como reação.",
+            "Avental de Açougueiro": "Avental de couro sempre sujo de sangue. Uma vez por turno, você pode rolar de novo os dados de dano de um ataque corpo a corpo com arma, ficando com a segunda rolagem, e suas armas que causam dano cortante fazem crítico com 19 ou 20.",
+            "Azuredge": "Machado de batalha +3 senciente, criado para proteger Águas Profundas. A magia Escudo Arcano não protege contra ele, e contra corruptores e mortos-vivos ele causa 2d6 de dano radiante extra. Tem 3 cargas para poderes de luz e proteção.",
+            "Bandeira da Runa Krig": "Estandarte de gigante. Com uma ação bônus, deixa você e os aliados a até 6 metros imunes a ficarem amedrontados por 10 minutos (uma vez por descanso). Desenrolada, também revela criaturas invisíveis a até 6 metros e tem outros poderes defensivos. Sua magia pode ser transferida para um lugar ao traçar a runa no chão.",
+            "Bandolim de Fochlucan": "Magias próprias deste instrumento: Constrição, Fogo das Fadas, Bordão Místico e Falar com Animais.",
+            "Baralho das Maravilhas": "Baralho de 13 cartas (às vezes 20) com efeitos mágicos. Ao puxar uma carta, o efeito acontece na hora e pode ser bom, como pontos de vida temporários, bônus em ataques e dano por 8 horas ou a magia Sexto Sentido, ou ruim, como sofrer dano necrótico até ficar com 1 ponto de vida.",
+            "Baralho de Muito Mais Coisas": "Versão ampliada do Baralho de Muitas Coisas, com mais cartas. Você declara quantas vai puxar e cada carta tem um efeito imediato e dramático, de muito bom a desastroso, como ganhar telepatia, virar uma besta aleatória ou receber a magia Parar o Tempo.",
+            "Barril de Fogo do Alquimista": "Arremessado a até 6 metros, causa 6d6 de dano de fogo e deixa o alvo em chamas: ele sofre o dano de novo no começo de cada turno até alguém apagar o fogo, o que exige uma ação e um cobertor ou tapete para abafar.",
+            "Bastão de Ressurreição": "Tem 5 cargas e recupera 1 por dia ao amanhecer. Com uma ação, conjura Cura Completa (1 carga) ou Ressurreição (5 cargas). Se chegar a 0 cargas, role 1d20: com 1, ele some numa explosão de luz.",
+            "Bastão do Tentáculo": "Com uma ação, os três tentáculos atacam criaturas a até 4,5 metros (+9 para acertar, 1d6 de concussão cada). Se os três acertarem o mesmo alvo, ele faz um teste de Constituição CD 15 ou, por 1 minuto, fica com metade do deslocamento, desvantagem nos testes de resistência de Destreza, sem reações e com só uma ação ou ação bônus por turno.",
+            "Bastão Guardião de Pactos": "Dá +1, +2 ou +3 (conforme a raridade) nas jogadas de ataque com magia e na CD das suas magias de bruxo. Uma vez por descanso longo, com uma ação, você recupera um espaço de magia de bruxo.",
+            "Bengala do Veterano": "Com uma ação bônus e uma palavra de comando, a bengala vira uma espada longa comum. Repetir a palavra faz ela voltar a ser bengala.",
+            "Besta Estelar": "Besta +1 com 4 cargas (recupera 1d4 ao amanhecer) e três constelações gravadas. Com uma ação bônus e 1 carga, você ativa uma delas, como Equilíbrio, que faz o próximo acerto curar você ou um aliado a até 18 metros em 1d8 + seu bônus de proficiência.",
+            "Bolha de Respiração": "Usada na cabeça como um capacete, guarda 1 hora de ar respirável, o que deixa você respirar onde não há ar, como debaixo d'água. O ar se renova todo dia ao amanhecer.",
+            "Bolsa Conveniente de Especiarias de Heward": "Tem 10 cargas. Com uma ação e 1 carga, você diz o nome de um tempero comum (sal, pimenta, açafrão...) e tira uma pitada dele, o bastante para uma refeição. Recupera 1d6 + 4 cargas ao amanhecer.",
+            "Boneca Falante": "Num descanso curto perto dela, você grava até seis frases de no máximo seis palavras e escolhe o que faz cada uma ser dita, como 'quando alguém entrar'. A boneca fala a frase quando isso acontece a até 1,5 metro dela. As frases se perdem se a sintonização acabar.",
+            "Botas de Pegadas Falsas": "Só humanoides podem usá-las. Você escolhe deixar pegadas de outro tipo de humanoide do seu tamanho.",
+            "Braçadeira de Adagas Voadoras": "Com uma ação, você tira até duas adagas mágicas da braçadeira e já as arremessa, fazendo um ataque à distância com cada uma. As adagas somem depois de acertar ou errar, e nunca acabam.",
+            "Braceletes de Magia de Pedra": "Dão imunidade a ser petrificado e permitem conjurar Carne para Pedra (CD 15) com uma ação, sem gastar espaço, três vezes no total. Depois disso, a pulseira passa a conjurar Pele de Pedra.",
+            "Broche da Essência Viva": "Enquanto você usa o broche, magias e outros efeitos que revelariam seu tipo de criatura mostram você como humanoide, e os que revelariam sua tendência mostram você como neutro.",
+            "Broche Guarda-chuva": "Com uma ação, cria ou desfaz uma pequena cúpula de energia logo acima da sua cabeça, que protege você da chuva.",
+            "Bumerangue da Tempestade": "Arma de arremesso (alcance 18/36 metros). Ao acertar, causa 1d4 de concussão e 3d4 de trovão, e o alvo precisa passar num teste de Constituição CD 10 ou fica atordoado até o fim do seu próximo turno; se errar, volta para a sua mão. Depois de causar o trovão, perde esse poder e o atordoamento até passar 1 hora dentro de um nodo elemental do ar.",
+            "Cachecol Platinado": "Lenço coberto de escamas de platina. Com uma ação, você arranca uma escama e escolhe um efeito, como curar 10d4 pontos de vida em você ou em quem tocar, ou transformar a escama num escudo +1 que dura 1 hora.",
+            "Cachimbo das Lembranças": "Quando é fumado, a fumaça ganha forma e encena, durante 5 minutos, os feitos mais heroicos de quem está com ele.",
+            "Cachimbo dos Monstros de Fumaça": "Enquanto fuma, você pode gastar uma ação para soltar fumaça com a forma de uma criatura (um dragão, um kraken...) do tamanho de um cubo de 30 cm. A figura se desfaz em poucos segundos.",
+            "Cadeado da Enganação": "Parece um cadeado comum com chave, mas a fechadura se reajusta sozinha contra arrombadores: testes de Destreza para abri-la sem a chave têm desvantagem.",
+            "Caixa de Quebra-cabeças Infernal": "Cubo de 7,5 cm usado para guardar contratos infernais. Fechada, a caixa é imune a qualquer dano e só se abre para quem resolver o quebra-cabeça, que sempre tem solução mecânica, nunca mágica.",
+            "Cajado Canoro": "Tem 10 cargas. Com uma ação e 1 carga, faz o canto ou chamado de uma ave (corvo, pato, coruja, águia etc.) soar num ponto a até 18 metros. Recupera 1d6 + 4 cargas ao amanhecer; ao gastar a última, role 1d20: com 1, ele vira uma nuvem de penas e se perde.",
+            "Cajado Cegante": "Bordão +1 que também dá +1 nas jogadas de ataque com magia. Uma vez por dia, quando uma criatura voadora a até 9 metros ataca você, sua reação faz o cajado brilhar e ela precisa passar num teste de Constituição CD 15 ou fica cega até o fim do próximo turno dela.",
+            "Cajado da Aranha": "Como arma, causa 1d6 de dano extra de veneno. Tem 10 cargas para conjurar Patas de Aranha (1 carga) ou Teia (2 cargas, CD 15). Recupera 1d6 + 4 cargas ao anoitecer.",
+            "Cajado da Defesa": "Enquanto você o segura, ganha +1 na CA. Tem 10 cargas para conjurar Armadura Arcana (1 carga) ou Escudo Arcano (2 cargas) e recupera 1d6 + 4 ao amanhecer; ao gastar a última, role 1d20: com 1, ele vira pó.",
+            "Cajado da Garra Marfim": "Dá +1 nas jogadas de ataque com magia, e quando um ataque com magia seu é crítico, o alvo sofre 3d6 de dano radiante extra.",
+            "Cajado da Ornamentação": "Até três objetos pequenos, de até 0,5 kg cada, colocados na ponta do cajado ficam flutuando logo acima dela, e você pode fazê-los girar devagar. Eles caem quando o cajado sai da sua posse.",
+            "Cajado da Víbora": "Com uma ação bônus e a palavra de comando, a ponta vira uma cobra venenosa viva por 1 minuto, com a qual você ataca corpo a corpo. Ao acertar, causa 1d6 de dano perfurante e o alvo faz um teste de Constituição CD 15 ou sofre 3d6 de veneno. A cabeça de cobra pode ser atacada (CA 15, 20 PV), e o cajado é destruído se ela cair.",
+            "Cajado das Flores": "Tem 10 cargas. Com uma ação e 1 carga, faz brotar uma flor no próprio cajado ou no chão a até 1,5 metro. Recupera 1d6 + 4 cargas ao amanhecer; ao gastar a última, role 1d20: com 1, ele se desfaz em pétalas e se perde.",
+            "Cajado de Dunamancia": "Cajado de mago com 10 cargas (recupera 1d6 + 4 ao amanhecer). Com uma ação, conjura magias de dunamancia usando sua CD, como Dádiva da Sorte (2 cargas), Onda de Pulso (3) e Buraco Gravitacional (4). Ao gastar a última carga, role 1d20: com 1, vira pó.",
+            "Cajado de Guerra": "Foco arcano para quem pode usar cajados como foco. Segurado com as duas mãos, permite conjurar truques com até o dobro do alcance; além do alcance normal, os ataques têm desvantagem e os alvos têm vantagem para resistir.",
+            "Cajado de Gulthias": "Cajado vampírico com 10 cargas, que recupera 1d6 + 4 ao anoitecer. Como bordão, ao acertar você pode gastar 1 carga para recuperar pontos de vida iguais ao dano causado, mas cada uso exige um teste de Sabedoria CD 12 para não sofrer loucura de curto prazo. Destruí-lo mata todos os monstros-planta ligados a ele que ouvirem o grito.",
+            "Cajado do Dragão de Ahghairon": "Dá vantagem nos testes de resistência contra magias e sopros de dragões. Tem 10 cargas (recupera 1d10 ao amanhecer): com uma ação e 1 carga conjura Comando, e dragões têm desvantagem no teste contra ele. Também tem outros poderes contra dragões.",
+            "Cajado do Sol": "Bordão +2 que causa 1d8 de fogo extra a cada acerto e serve de foco arcano. Ao conjurar magias de fogo ou radiantes, você pode rolar de novo quantos dados de dano quiser. Com uma ação bônus, ele brilha com luz solar de 9 metros.",
+            "Cajado do Viajante": "Bordão +1 que também dá +1 nos ataques com magia. Tem 10 cargas para conjurar, com sua CD, Passo Nebuloso (2 cargas), Piscar (3), Banimento (4), Criar Passagem (5) ou Teletransporte (7).",
+            "Cajado Místico": "Bordão +1 com 10 cargas, que recupera 1d6 + 4 ao amanhecer. Ao acertar um ataque corpo a corpo, você pode gastar até 3 cargas para causar dano extra. Ao gastar a última carga, role 1d20: com 1, ele explode sem causar dano e é destruído.",
+            "Cajado Negro": "Cajado dos Bastões Negros de Águas Profundas, que só sintoniza com o herdeiro do título. Gastando cargas, você anima ou desliga as estátuas ambulantes da cidade, conjura Dissipar Magia com uma ação bônus e usa outros poderes arcanos.",
+            "Caldeira de Renascimento": "Foco arcano de druida e bruxo, também serve de componente para Vidência. Depois de cada descanso longo, produz uma Poção de Cura Maior que dura 24 horas. Com uma ação, cresce até caber uma criatura Média, e um humanoide morto deixado nele, coberto com uns 90 kg de sal, volta à vida como por Reviver os Mortos; depois disso, só funciona de novo após 7 dias.",
+            "Caldeirão da Abundância": "Caldeirão grande de 22,5 kg. Água mexida nele por 1 minuto vira um cozido quente que alimenta até quatro pessoas e se mantém quente enquanto ficar ali.",
+            "Caldeirão de Iggwilv": "Caldeirão de 36 kg que Iggwilv criou com a ajuda de Baba Yaga, capaz de guardar 100 litros e de preparar poções e magias poderosas. Só as duas bruxas podem mudar a forma dele, e ele tem propriedades aleatórias de artefato.",
+            "Canário de Ouro": "Estatueta de canário. Com uma ação, você a joga no chão a até 18 metros e ela vira um canário gigante que serve de montaria (usa a ficha de coruja gigante) por até 8 horas, ou um dragão dourado por pouco tempo, que não usa ações lendárias nem de covil. Depois, leva dias para funcionar de novo.",
+            "Caneca da Sobriedade": "Quem bebe dela não fica bêbado com bebida alcoólica comum. Poções e venenos funcionam normalmente.",
+            "Caneta Esmeralda": "Escreve sem precisar de tinta, e enquanto você a segura pode conjurar Escrita Ilusória à vontade, sem componentes materiais.",
+            "Canhão Arcano": "Canhão grande que dispara ácido numa linha de 90 metros por 1,5 metro: teste de Destreza CD 15, 4d10 de dano ácido, metade se passar. Depois de cada disparo, precisa de 5 minutos para recarregar.",
+            "Capa da Ondulação": "Com uma ação bônus, a capa esvoaça de forma dramática, mesmo sem vento.",
+            "Capa de Ampliação": "Aumenta seu tamanho em uma categoria e dá 50 pontos de vida máximos a mais, +3 metros de deslocamento, vantagem em testes e testes de resistência de Força e o dobro de dados de dano nas armas e ataques desarmados.",
+            "Capa de Muitas Modas": "Com uma ação bônus, você muda o estilo, a cor e a aparência de qualidade da capa. Ela continua sendo uma capa, com o mesmo peso, e mesmo imitando capas mágicas não ganha os poderes delas.",
+            "Capa de Respirar na Água": "Debaixo d'água, você usa uma ação e a palavra de comando para criar uma bolha de ar em volta da cabeça e respirar normalmente. A bolha dura até você repetir a palavra, tirar a capa ou sair da água.",
+            "Cápsula de Pressão": "Quem engole uma pode nadar a mais de 30 metros de profundidade sem sofrer os efeitos da pressão.",
+            "Caranguejo Mecânico": "Autômato de metal do tamanho de um prato. Cada ação gasta dando corda o faz funcionar por 1 minuto, até o máximo de 10. Ligado, age como uma criatura própria, controlada pelo Mestre, e é destruído se chegar a 0 pontos de vida.",
+            "Cartilha de Lorehold": "Tem 3 cargas e recupera 1d3 ao amanhecer. Depois de rolar um teste de Inteligência (História) ou (Religião), você pode gastar 1 carga para somar 1d4. Se estudá-la ao fim de um descanso longo, escolhe uma magia de 1º círculo de clérigo ou mago e pode conjurá-la uma vez sem gastar espaço até o próximo descanso longo.",
+            "Cartilha de Prismari": "Tem 3 cargas e recupera 1d3 ao amanhecer. Depois de rolar um teste de Destreza (Acrobacia) ou Carisma (Atuação), você pode gastar 1 carga para somar 1d4. Se estudá-la ao fim de um descanso longo, escolhe uma magia de 1º círculo de bardo ou feiticeiro e pode conjurá-la uma vez sem gastar espaço até o próximo descanso longo.",
+            "Cartilha de Quandrix": "Tem 3 cargas e recupera 1d3 ao amanhecer. Depois de rolar um teste de Inteligência (Arcanismo) ou (Natureza), você pode gastar 1 carga para somar 1d4. Se estudá-la ao fim de um descanso longo, escolhe uma magia de 1º círculo de druida ou mago e pode conjurá-la uma vez sem gastar espaço até o próximo descanso longo.",
+            "Cartilha de Silverquill": "Tem 3 cargas e recupera 1d3 ao amanhecer. Depois de rolar um teste de Carisma (Intimidação) ou (Persuasão), você pode gastar 1 carga para somar 1d4. Se estudá-la ao fim de um descanso longo, escolhe uma magia de 1º círculo de bardo ou clérigo e pode conjurá-la uma vez sem gastar espaço até o próximo descanso longo.",
+            "Cartilha de Witherbloom": "Tem 3 cargas e recupera 1d3 ao amanhecer. Depois de rolar um teste de Inteligência (Natureza) ou Sabedoria (Sobrevivência), você pode gastar 1 carga para somar 1d4. Se estudá-la ao fim de um descanso longo, escolhe uma magia de 1º círculo de druida ou mago e pode conjurá-la uma vez sem gastar espaço até o próximo descanso longo.",
+            "Cartilha do Tecelão de Corações": "Grimório e foco arcano de mago com Antipatia/Simpatia, Enfeitiçar Pessoa, Dominar Pessoa, Cativar, Padrão Hipnótico, Modificar Memória e Sugestão. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de encantamento do livro, e outra impõe desvantagem no teste de resistência contra uma magia de encantamento sua.",
+            "Casaco de Muitos Olhos": "Couro batido coberto de olhos, criado pelo daelkyr Belashyrra. Ao se sintonizar, ele se liga à sua carne e compartilha a visão dele com você. Evolui conforme você serve Belashyrra, de incomum para rara e muito rara, ganhando mais poderes de visão.",
+            "Casaco do Caçador": "Couro batido que dá +1 na CA. Tem 4 cargas (recupera 1d4 ao amanhecer): ao acertar uma criatura que já está ferida, 1 carga causa 1d10 de dano necrótico extra.",
+            "Cetro de Chamas Infernais": "Dá +3 nas jogadas de ataque com magia e na CD das suas magias, e resistência a fogo e a dano necrótico. Também permite conjurar Repreensão Infernal como magia de 5º círculo (CD 17).",
+            "Cetro de Korolnor": "Cetro de gigante da tempestade que funciona como clava +3. Quem o segura pode usar os poderes do Trono do Crânio de Dragão à distância, além dos poderes do próprio cetro.",
+            "Cetro de Orcus": "Varinha do príncipe demônio dos mortos-vivos, que funciona como maça +3 e causa 2d12 de dano necrótico extra. Quem não for Orcus e tentar se sintonizar faz um teste de Constituição CD 17: se passar sofre 10d6 de dano necrótico, se falhar morre e volta como zumbi. Tem cargas para magias de necromancia, pode invocar mortos-vivos e tem propriedades aleatórias de artefato.",
+            "Cetro de Rao": "Cajado do deus Rao, com propriedades aleatórias de artefato e 6 cargas para magias (recupera 1d6 ao amanhecer). Seu poder maior é um ritual que expulsa corruptores do plano, exceto os muito poderosos (ND 19 ou mais).",
+            "Cetro de Rubi de Asmodeus": "Cetro do senhor dos Nove Infernos, que funciona como estrela-da-manhã +3. Tem 66 cargas (recupera 6d6 ao anoitecer) para magias e poderes infernais, e propriedades aleatórias de artefato.",
+            "Cetro de Sete Partes": "Cajado divino quebrado em sete pedaços espalhados pelo multiverso. Segurando um pedaço, você sabe a direção do próximo. Ele não pode ser sintonizado enquanto estiver quebrado, e cada parte reunida libera mais poderes, até o cetro completo.",
+            "Cetro do Governante": "Com uma ação, cria uma pequena orbe de relâmpago a até 18 metros, que você mantém com concentração e move 6 metros por ação bônus. Quando a concentração acaba ou alguém entra no espaço dela, a orbe explode numa esfera de 6 metros: teste de Destreza CD 15, 6d6 de dano elétrico (mais a cada turno que você a sustenta), metade se passar.",
+            "Chapéu da Feitiçaria": "Serve de foco arcano para magias de mago. Uma vez por descanso longo, você pode tentar conjurar um truque de mago que não conhece com um teste de Inteligência (Arcanismo) CD 10; se falhar, a ação é perdida.",
+            "Chapéu dos Vermes": "Tem 3 cargas. Com uma ação e 1 carga, você tira do chapéu um morcego, um sapo ou um rato comum, que age como um animal normal e some depois de 1 hora ou ao cair a 0 pontos de vida. Recupera todas as cargas ao amanhecer.",
+            "Chave do Infiltrador": "Vestígio da Divergência que fica mais forte com o seu nível. No começo, conta como ferramentas de ladrão (com proficiência), dá vantagem para abrir fechaduras e para se mover em silêncio. A partir do 9º nível, vira adaga mágica e ganha poderes de passagem, e no 14º nível fica ainda mais poderosa.",
+            "Chave dos Sonhos": "Se você dormir com ela, fica totalmente lúcido durante os sonhos e se lembra de tudo com clareza ao acordar.",
+            "Chave Misteriosa": "Tem 5% de chance de abrir qualquer fechadura em que for colocada. Depois de abrir alguma coisa, ela desaparece.",
+            "Chicote das Sombras": "Vestígio da Divergência senciente, caótico e mau (Int 18, Sab 16, Car 20). Funciona como chicote +1, permite falar abissal e dracônico e envenenar quem você acerta. Fica mais forte nos níveis 9 e 14.",
+            "Chicote do Deus das Trevas": "Chicote +3 que causa 2d8 de dano necrótico extra e cura você na metade desse valor. No seu turno, seus ataques com ele podem alcançar até 18 metros. Quem venera um deus dos mortos ganha mais poderes conforme sobe de nível.",
+            "Chifre do Alarme Silencioso": "Tem 4 cargas. Com uma ação e 1 carga, você o sopra e só as criaturas que escolher, a até 180 metros, escutam o som. Recupera 1d4 cargas ao amanhecer.",
+            "Chifre Fúnebre": "Chifre de guerra de 90 cm feito da ponta de um chifre de dragão vermelho, que só sintoniza com bardos. Tem propriedades aleatórias de artefato (goblinoides ficam imunes às prejudiciais) e poderes que fortalecem aliados e aterrorizam inimigos.",
+            "Cinturão Antigravitacional": "Uma célula de energia cheia dá 10 cargas ao cinto. Com uma ação bônus, você gasta quantas quiser e ele fica ativo por 1 minuto por carga; ativo, cada ação bônus permite subir ou descer até 18 metros na vertical. Desligar antes não devolve as cargas.",
+            "Cinturão da Tempestade": "Dá resistência a eletricidade e trovão e deixa sua Força em 21. Uma vez por dia, com uma ação, você vira um Avatar da Tempestade por 1 minuto: fica imune a eletricidade e trovão, seus ataques de concussão causam dano elétrico extra e você ganha outros poderes de tempestade.",
+            "Cinturão de Couro de Dragão": "Cinto de pele de dragão para monges. Dá +1, +2 ou +3 (conforme a raridade) na CD das suas habilidades de chi, e uma vez por dia, com uma ação, você recupera pontos de chi iguais a uma rolagem do seu dado de Artes Marciais.",
+            "Cítara de Mac-fuirmidh": "Magias próprias deste instrumento: Pele de Árvore, Curar Ferimentos e Névoa Obscurecente.",
+            "Códice do Planauta": "Grimório e foco arcano de mago com Banimento, Encontrar Familiar, Portal, Círculo de Magia, Contato Extraplanar e Conjurar Elemental. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de conjuração, e outra dá à criatura que você invocar vantagem nas jogadas de ataque por 1 minuto.",
+            "Compêndio Alquímico": "Grimório e foco arcano de mago com Aumentar/Reduzir, Queda Suave, Carne para Pedra, Forma Gasosa, Arma Mágica e Metamorfose. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de transmutação, e outra transforma um objeto não mágico de até 30 cm em outro objeto parecido.",
+            "Concha de Teletransporte": "Concha de 9 kg. Uma vez por dia, soprá-la com uma ação conjura Teletransporte para um destino fixo, sem risco de erro.",
+            "Conjunto do Lorde Mascarado": "Elmo e traje usados pelos Lordes Mascarados de Águas Profundas, sintonizados como um item só. Com o elmo, sua voz fica sem gênero e você fica imune a magias que leem pensamentos, detectam mentiras ou revelam tendência e tipo de criatura. O conjunto também protege contra detecção e localização, como o amuleto de mesmo efeito.",
+            "Controlador de Máquinas": "Recebe 10 cargas de uma célula de energia. Com uma ação e 1 carga, um constructo a até 18 metros faz um teste de Sabedoria CD 15 ou fica enfeitiçado por 1 hora, obedecendo você e conversando à distância pelo aparelho. Gastando as 10 cargas, solta uma onda que desliga os constructos que você escolher a até 9 metros.",
+            "Corda do Reparo": "Corda de cânhamo de 15 metros que pode ser cortada em pedaços; com uma ação e uma palavra de comando, os pedaços que estiverem encostados se juntam de novo. Se algum pedaço se perder, ela fica mais curta para sempre.",
+            "Coroa de Prisma": "Vestígio da Divergência que fica mais forte com o seu nível. No começo, dá visão no escuro de 18 metros (ou soma 18 metros à que você tem) e, ao acertar ou agarrar uma besta, dragão ou monstruosidade de ND 5 ou menor, permite conjurar Dominar Monstro nela. Nos níveis mais altos, o limite de ND aumenta.",
+            "Coroa de Proteção Mental": "Coroa de mitral que dá resistência a dano psíquico e vantagem nos testes de resistência de Inteligência, Sabedoria e Carisma.",
+            "Coroa Perdida de Besilmer": "Coroa de um antigo reino anão. Tem 4 cargas (recupera 1d4 ao amanhecer), dá resistência a dano psíquico e permite gastar cargas para ganhar vantagem contra ficar enfeitiçado, entre outros poderes de liderança.",
+            "Couraça de Mitral Fundido": "Bronze derretido que se molda ao seu corpo e só sai quando você quer, com uma ação bônus. Dá +2 na CA, resistência a fogo e vulnerabilidade a frio e eletricidade, e não atrapalha a Furtividade.",
+            "Couro do Guardião Feral": "Vestígio da Divergência (couro batido) que fica mais forte com o seu nível. No começo, dá +1 na CA e, quando você está transformado em outra criatura, +1 nos ataques e dano corpo a corpo, mantendo os benefícios da armadura. Também permite se transformar com magia, e os bônus crescem nos níveis 9 e 14.",
+            "Cristal do Orador de Pedra": "Cristal de quartzo de 50 cm que dá vantagem em testes de Investigação. Tem 10 cargas para conjurar magias como Falar com Animais (2 cargas), Falar com Plantas (3) e Falar com os Mortos (4).",
+            "Cristal Psiônico": "Dá telepatia e brilha em roxo enquanto você está sintonizado. O alcance depende da sua Inteligência: 4,5 metros (Int 3 a 7), 9 metros (8 a 11), 18 metros (12 a 15) ou 36 metros (16 ou mais).",
+            "Crônica Cristalina": "Cristal que funciona como grimório e foco arcano de mago, com Detectar Pensamentos, Fortaleza do Intelecto, Vínculo Telepático de Rary, Telecinésia, Chicote Mental de Tasha e Disco Flutuante de Tenser. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra do cristal, e outra permite conjurar uma magia de mago sem componentes verbais, gestuais ou materiais baratos.",
+            "Cubo Térmico": "Cubo de enxofre de 7,5 cm que solta calor e mantém o ar a até 4,5 metros dele em torno de 35 °C.",
+            "Dado do Charlatão": "Sempre que você rola este d6, escolhe o número que sai.",
+            "Dardo Teleguiado": "Ao sussurrar 'busque' e arremessar o dardo, ele persegue um alvo que você escolher a até 36 metros, passando por frestas de 5 cm e fazendo curvas. O alvo precisa passar num teste de Destreza CD 16 ou sofre 1d4 de dano perfurante e 3d4 de eletricidade.",
+            "Demonomicon de Iggwilv": "O tratado mais completo sobre demônios do multiverso. Tem propriedades aleatórias de artefato e 8 cargas (recupera 1d8 ao amanhecer) para magias como Círculo Mágico, Recipiente Arcano, Aliado Planar, Viagem Planar (só para o Abismo) e Invocar Corruptor. Também ajuda a pesquisar e a aprisionar demônios.",
+            "Dentes de Dahlver-nar": "Bolsa com os dentes de um herói lendário. Com uma ação, você tira um dente e rola na tabela para saber qual é: você pode plantá-lo para invocar uma criatura das lendas ou implantá-lo na boca para ganhar um poder. Os dentes usados podem ser recuperados com cargas.",
+            "Devoradora de Santuários": "Machado de batalha +3 que pertenceu a Arkhan, o Cruel. Quando você tira 20 no d20 de um ataque com ele, o alvo sofre 2d8 de dano necrótico extra e você recupera pontos de vida iguais a esse dano.",
+            "Distintivo da Guarda": "Distintivo oficial da guarda de Águas Profundas, que só sintoniza com quem o Senhor Aberto autorizar. Dá +2 na CA se você não usa escudo. O Senhor Aberto sabe onde você está e pode encerrar a sintonia, e o distintivo volta para ele se ficar longe de você por mais de 1 minuto.",
+            "Docente": "Pequena esfera senciente (Int 16, Sab 14, Car 14) que se integra ao corpo de um forjado. Ela fala vários idiomas, enxerga no escuro a 18 metros, dá conselhos e conhecimento e, quando você termina o turno com 0 pontos de vida, pode tentar estabilizá-lo com Medicina +6. Também conjura algumas magias simples.",
+            "Égide de Euryale": "Escudo que dá +3 na CA além do normal, resistência a veneno e imunidade a ficar envenenado, paralisado ou petrificado. Com uma ação bônus, os olhos da medusa gravada brilham e você tenta petrificar uma criatura a até 9 metros.",
+            "Elixir de Saúde": "Cura qualquer doença e remove as condições cego, surdo, paralisado e envenenado.",
+            "Elmo Amedrontador": "Enquanto você o usa, seus olhos brilham em vermelho e o resto do rosto fica escondido na sombra. É só um efeito visual.",
+            "Elmo de Ação Subaquática": "Enquanto o usa, você respira debaixo d'água, tem visão no escuro de 18 metros e deslocamento de natação de 9 metros.",
+            "Elmo de Comandar Corruptores": "Elmo que só sintoniza com quem fala Abissal e Infernal. Mostra a posição e o tipo de todos os corruptores a até 1,5 km e permite falar com eles por telepatia. Tem 3 cargas para conjurar Dominar Monstro (CD 21), que só afeta corruptores.",
+            "Elmo do Potencial Perfeito": "Elmo com propriedades aleatórias de artefato (uma prejudicial menor, duas benéficas menores e duas maiores). Dá vantagem em testes de Carisma (Enganação) e Sabedoria (Intuição) e tem 6 cargas (recupera 1d6 ao amanhecer) para magias e uma flecha de devastação elemental.",
+            "Emblema do Protetor": "Com uma ação, você o prende ou solta de uma armadura ou escudo. Tem 3 cargas: quando você ou alguém que você vê a até 9 metros sofre um acerto crítico, sua reação e 1 carga transformam o crítico num acerto normal. Recupera as cargas ao amanhecer.",
+            "Escama Ornamental do Dragão Adormecido": "Joia, capa ou acessório feito de partes de dragão. Dá vantagem nos testes de resistência para não ficar amedrontado ou enfeitiçado, e para deixar de estar.",
+            "Escama Ornamental do Dragão Ascendente": "Dá +1 na CA, imunidade a ficar amedrontado ou enfeitiçado e vantagem para os aliados que você escolher a até 9 metros resistirem a essas condições. Também dá deslocamento de voo igual ao seu deslocamento a pé, podendo pairar.",
+            "Escama Ornamental do Dragão Desperto": "Dá +1 na CA e imunidade a ficar amedrontado ou enfeitiçado. As criaturas que você escolher a até 9 metros têm vantagem nos testes de resistência para não ficar amedrontadas ou enfeitiçadas, ou para deixar de estar.",
+            "Escama Ornamental do Dragão Vígil": "Dá +1 na CA e imunidade a ficar amedrontado ou enfeitiçado. As criaturas que você escolher a até 9 metros têm vantagem nos testes de resistência para não ficar amedrontadas ou enfeitiçadas, e nesse estágio o ornamento ganha mais poderes de proteção.",
+            "Escaravelho Atirador": "Simbionte que se funde à palma da sua mão. Em cada ataque da ação de Ataque, você pode disparar uma lasca de quitina afiada pela mão vazia como ataque à distância. Não pode ser removido enquanto houver sintonização, e você não consegue encerrá-la por vontade própria.",
+            "Escavador Mágico": "Simbionte em forma de besouro que entra no seu crânio na sintonização. Ele conhece um truque, uma magia de 1º círculo e uma de 2º círculo da lista de feiticeiro ou bruxo, que você pode conjurar sem que contem no seu limite de magias conhecidas ou preparadas.",
+            "Escudo da Expressão": "A frente do escudo tem um rosto. Com uma ação bônus, você muda a expressão dele.",
+            "Escudo de Investida": "Escudo de ferro que dá +1 na CA, além do bônus normal. Tem 4 cargas (recupera 1d4 ao amanhecer): ao empurrar uma criatura com ele, 1 carga a empurra 3 metros a mais, a derruba ou faz as duas coisas.",
+            "Escudo do Pária": "Dá +1 na CA para cada dois aliados a até 1,5 metro, até +3, além do bônus normal. Quando uma criatura que você vê a até 1,5 metro sofre dano, sua reação faz você receber esse dano no lugar dela, como dano de energia.",
+            "Escudo do Senhor Oculto": "Escudo que dá +2 na CA (além do normal) e resistência a fogo. É senciente enquanto prender o diabo Gargauth (Int 22, Sab 18, Car 24, com visão verdadeira a 36 metros), tem 3 cargas para conjurar magias e tenta corromper quem o carrega.",
+            "Escudo Encouraçado Flamejante": "Dá +3 na CA além do bônus normal do escudo. Com uma ação bônus, você o ativa por 1 minuto e lava escorre pelas ranhuras, dando imunidade a fogo, vantagem para resistir a certos efeitos e outros poderes de fogo.",
+            "Escudo Safira": "Dá resistência a dano psíquico e de trovão. Quando uma criatura a até 1,5 metro causa dano a você, sua reação causa 2d6 de dano de trovão nela. Com uma ação bônus, ele ajuda a localizar aberrações próximas até o fim do seu próximo turno.",
+            "Escudo Sentinela": "Enquanto o segura, você tem vantagem na iniciativa e nos testes de Sabedoria (Percepção).",
+            "Esfera da Direção": "Com uma ação, mostra para que lado fica o norte. Só funciona no Plano Material.",
+            "Esfera do Tempo": "Com uma ação, mostra se é manhã, tarde ou noite. Só funciona no Plano Material.",
+            "Esmagador": "Martelo de guerra +3 senciente que só sintoniza com anões. Arremessado, volta para a sua mão e causa dano extra, e tem 3 cargas para bater no chão e atordoar quem estiver por perto. Sintonizado, você desenvolve medo de lugares abertos e tem desvantagem em ataques, testes e testes de resistência quando vê o céu durante o dia.",
+            "Esmagadora do Crepúsculo": "Martelo de guerra cuja cabeça brilha com uma ação bônus (luz plena de 4,5 metros). Brilhando, dá +2 nas jogadas de ataque e dano e causa dano radiante em vez de concussão; com uma ação, você apaga o brilho.",
+            "Espada da Retaliação": "Espada longa +3 com propriedades aleatórias (duas benéficas menores e uma maior). Com a reação, você ataca qualquer criatura ao seu alcance que tenha acabado de causar dano a você.",
+            "Espada da Vingança": "Espada +1 amaldiçoada, possuída por um espírito vingativo. Enquanto sintonizado, você não quer se separar dela e tem desvantagem com outras armas. Quando alguém fere você em combate, faça um teste de Sabedoria CD 15; se falhar, passa a atacar essa criatura até um dos dois cair ou você não conseguir mais alcançá-la.",
+            "Espada de Kas": "Espada longa +3 senciente, criada para o traidor de Vecna. Faz crítico com 19 ou 20 e causa 2d10 de dano extra em mortos-vivos. Tem sede de sangue: se for sacada e não ferir ninguém, quem a empunha sofre dano psíquico. Tem propriedades aleatórias e magias.",
+            "Espada de Zariel": "Espada do anjo caído Zariel, que escolhe quem pode empunhá-la. Na primeira sintonia, você se transforma para sempre numa versão celestial e idealizada de si mesmo e ganha poderes angelicais, como falar celestial, resistências e grande poder contra corruptores.",
+            "Espada dos Párias": "Espada +1. Uma vez por turno, segurando-a, você usa uma propriedade de comando, como deixar uma criatura a até 18 metros usar a reação para atacar logo depois de você atacar com a espada.",
+            "Espada dos Planos": "Espada +3. Com uma ação, você corta o ar a até 1,5 metro e abre uma fenda para outro plano de existência à sua escolha, de até 3 por 3 metros, que dura 1 minuto.",
+            "Espada Lunar": "No escuro, a lâmina fora da bainha brilha como luar, dando luz plena em 4,5 metros e penumbra por mais 4,5 metros.",
+            "Espada Solar": "Espada senciente de tendência caótica e boa (Int 11, Sab 17, Car 16) que funciona como uma Lâmina do Sol: a lâmina é de luz radiante, causa dano extra em mortos-vivos e emite luz solar. Ela odeia vampiros e quer ver Strahd destruído.",
+            "Espanador": "Com uma ação, tira a sujeira e a fuligem de um espaço pequeno, de uns 30 cm, a até 3 metros. Existem versões maiores, como um esfregão que limpa um cubo de 1,5 metro por ação.",
+            "Estandarte de Batalha Infernal": "Estandarte com um quasit preso numa gaiola (CA 19, 10 PV, só sofre dano de energia). Enquanto você o segura, os ataques com arma seus e dos aliados a até 90 metros contam como mágicos para vencer resistências e imunidades.",
+            "Estátua de Adoração a Sekolah": "Estatueta de tubarão em arenito, com 30 cm. Se algo miúdo for posto na boca dela, o tubarão ganha vida por um instante, morde (1 de dano perfurante) e volta a ser pedra. Isso acontece no máximo uma vez por hora.",
+            "Fagulha": "Com uma ação bônus, ao tocar uma vela, tocha, lanterna ou outra coisa que queime, você a acende na hora.",
+            "Fêmur de Santa Markóvia": "Funciona como uma Maça do Rompimento, mas com +3 nas jogadas de ataque e dano e 4d10 de dano extra contra mortos-vivos.",
+            "Ferramenta de Mestre": "Ferramenta de artesão que serve de foco arcano e dá +1, +2 ou +3 (conforme a raridade) nas jogadas de ataque com magia. O mesmo bônus vale para os testes feitos com a ferramenta.",
+            "Ferramenta Integrada": "Ferramenta presa ao corpo de um forjado, autognomo ou reconstruído. Funciona como a ferramenta escolhida (de artesão, ferramentas de ladrão, kit de herbalismo, instrumento musical etc.), não pode ser tirada de você contra a sua vontade e leva 1 hora para ser colocada ou removida.",
+            "Ferramenta para Todos os Fins": "Chave de fenda que, com uma ação, vira qualquer ferramenta de artesão. Dá +1, +2 ou +3 (conforme a raridade) nos ataques com magia e na CD das magias de artífice. Uma vez por descanso longo, você escolhe um truque de qualquer lista e pode conjurá-lo como truque de artífice por 8 horas.",
+            "Fim Sangrento": "Vestígio da Divergência senciente, leal e mau (Int 22, Sab 18, Car 24), que pode abandonar você por alguém mais forte. Funciona como estrela-da-manhã +1 e permite falar infernal, e fica mais forte nos níveis 9 e 14.",
+            "Flâmula da Runa Vind": "Flâmula de seda dos gigantes. Permite voar até 12 metros como parte do movimento, evitar o dano de uma queda com a reação e conjurar Levitação. A magia da runa pode ser transferida para um item em 8 horas de trabalho.",
+            "Flâmula de Strixhaven": "Bandeirinha com o símbolo de Strixhaven ou de uma das cinco faculdades. Quando você a agita, o símbolo brilha, dando luz plena em 3 metros e penumbra por mais 3.",
+            "Flecha Inquebrável": "Não quebra de jeito nenhum, a não ser dentro de um campo antimagia.",
+            "Foco Arcano do Dragão Adormecido": "Cetro, orbe, amuleto ou cristal com motivos de dragão. Serve de foco arcano e dá vantagem nas jogadas de iniciativa.",
+            "Foco Arcano do Dragão Ascendente": "Foco arcano que dá vantagem na iniciativa. Quando você gasta um espaço para conjurar uma magia de ácido, frio, fogo, eletricidade ou veneno, rola 3d6 e soma o resultado a uma das rolagens de dano. Também permite conjurar algumas magias dracônicas.",
+            "Foco Arcano do Dragão Desperto": "Foco arcano que dá vantagem na iniciativa. Quando você gasta um espaço para conjurar uma magia de ácido, frio, fogo, eletricidade ou veneno, rola 1d6 e soma o resultado a uma das rolagens de dano.",
+            "Foco Arcano do Dragão Vígil": "Foco arcano que dá vantagem na iniciativa. Quando você gasta um espaço para conjurar uma magia de ácido, frio, fogo, eletricidade ou veneno, rola 2d6 e soma o resultado a uma das rolagens de dano.",
+            "Foice Lunar": "Foice que dá +1, +2 ou +3 (conforme a raridade) nos ataques e dano com ela e nos ataques com magia e na CD das magias de druida e patrulheiro, servindo também de foco. Quando você conjura uma magia de cura, pode somar 1d4 aos pontos de vida recuperados.",
+            "Forjadora do Sol": "Martelo de guerra +2. Com uma ação, você o arremessa até um ponto a 36 metros, onde ele explode numa esfera de 6 metros: teste de Destreza CD 15, 6d6 de fogo, metade se passar. Depois ele reaparece na sua mão. Uma vez por dia.",
+            "Fragmento Astral": "Fragmento do Plano Astral que serve de foco arcano para feiticeiros. Quando você usa Metamagia numa magia, logo depois de conjurá-la pode se teletransportar para um espaço que vê a até 9 metros.",
+            "Fragmento da Agréstia das Fadas": "Pedaço da Agréstia das Fadas que serve de foco arcano para feiticeiros e pode ser preso a um objeto pequeno. Quando você usa Metamagia segurando ou vestindo o fragmento, pode rolar na tabela de Surto de Magia Selvagem.",
+            "Fragmento de Essência do Plano Exterior": "Foco arcano de feiticeiro ligado a um alinhamento sorteado com 1d4. Ao usar Metamagia, ganha o efeito dele: leal (encerra uma condição como enfeitiçado, cego ou atordoado), caótico (um alvo atingido tem desvantagem em ataques e testes), bom (cura) ou mau (dano necrótico extra).",
+            "Fragmento de Essência Elemental": "Foco arcano de feiticeiro ligado a um elemento sorteado com 1d4. Ao usar Metamagia, ganha o efeito do elemento: ar (voa 18 metros sem provocar ataques), terra (resistência a um tipo de dano por 1 rodada), fogo (um alvo da magia queima e sofre 2d10 de fogo) ou água (uma onda empurra criaturas próximas).",
+            "Fragmento de Runa Ise": "Com uma ação, congela a água numa esfera de 3 metros a partir do ponto que você tocar, e dá resistência a fogo. Também permite proteger você ou outra criatura com um toque: o próximo dano de concussão, corte ou perfuração no minuto seguinte é anulado. A magia pode ser transferida para um item ao traçar a runa.",
+            "Fragmento do Pendor das Sombras": "Foco arcano de feiticeiro. Ao usar Metamagia, você amaldiçoa por um instante um alvo da magia: escolhe uma habilidade, e até o fim do seu próximo turno ele tem desvantagem nos testes e testes de resistência dela.",
+            "Fragmento do Plano Distante": "Foco arcano de feiticeiro. Ao usar Metamagia, um tentáculo rasga a realidade e golpeia uma criatura a até 9 metros: teste de Carisma contra a CD das suas magias, ou ela sofre 3d6 de dano psíquico e fica amedrontada até o início do seu próximo turno.",
+            "Frasco de Sopro": "Contém uma lufada de ar elemental. Ao inspirá-la, você pode soltar o efeito de Lufada de Vento ou prender a respiração e ficar 1 hora sem precisar respirar. Falar ou fazer algo que exija respirar encerra o efeito.",
+            "Frasco do Poço de Sangue": "Frasco com gotas do seu sangue, que serve de foco para feiticeiros e dá +1, +2 ou +3 (conforme a raridade) nos ataques com magia e na CD das suas magias. Uma vez por descanso longo, quando você rola Dados de Vida para se curar, recupera 5 pontos de feitiçaria.",
+            "Funda dos Pássaros Gêmeos": "Funda +1. Uma vez por turno, ao acertar um ataque com ela, a munição pode ricochetear para um segundo alvo a até 3 metros do primeiro, contra quem você faz outro ataque.",
+            "Fúria do Vento": "Lança +2 leve e com acuidade que causa 1d6 de dano elétrico extra. Empunhando-a, você fala auran, tem resistência a eletricidade e pode conjurar Dominar Monstro (CD 17) em elementais do ar, entre outros poderes ligados ao vento.",
+            "Gancho do Deleite do Pescador": "Amarrado numa linha e mergulhado em bastante água, tem chance de 1 em 6 por hora de fisgar um peixe mágico de 15 cm, uma vez por dia. Role 1d20 para o tipo: na maioria das vezes é um peixe que alimenta por um dia, mas pode ser um peixe fedorento para arremessar ou outros peixes com efeitos especiais.",
+            "Garra da Runa Wyrm": "Garra de dragão com a runa do wyrm. Três vezes por dia, com uma ação, faz um dragão a até 9 metros passar num teste de Constituição ou ficar vulnerável a todos os danos até o fim do próximo turno dele. Com ela, você tem resistência a armas de sopro. Sua magia pode ser transferida para um lugar ao traçar a runa no chão.",
+            "Garrafa de Magia": "Garrafa de vidro que guarda uma magia de até 5º círculo, que qualquer criatura pode conjurar dentro dela. Segurando a garrafa, você conjura a magia guardada como se fosse sua. Ao ser encontrada, role 1d6 - 1 para o círculo da magia que já vem dentro (com 0, está vazia).",
+            "Garrafa Térmica de Café Ilimitado": "Serve café quente sempre que você quiser. Cada vez que você bebe, role 1d20: com 1, a garrafa se recusa a servir pela próxima hora.",
+            "Garras de Tríbulo Brutal": "Garras de ferro que dão deslocamento de escavação de 6 metros, cavam rocha sólida aos poucos e podem ser usadas como arma (1d8 de dano cortante, com proficiência). Enquanto as usa, você não consegue manipular objetos com as mãos.",
+            "Gema da Teia Rubi": "Foco arcano com 3 cargas, que voltam ao amanhecer. Ao conjurar uma magia, cada carga gasta permite ignorar até 500 po de componentes materiais. Ao fim de cada descanso longo, você escolhe uma magia de qualquer lista e passa a conhecê-la até o próximo descanso.",
+            "Gema de Armazenamento": "Gema que guarda uma magia de qualquer lista. Segurando-a, você conjura a magia com uma ação, sem componentes materiais nem sintonização, se conhecê-la ou se ela estiver na sua lista; se for de círculo alto demais para você, precisa de um teste com CD 10 + o círculo. Depois a magia some, e quem estiver sintonizado pode guardar outra, uma vez por dia. A raridade depende do círculo máximo da gema.",
+            "Globo de Fluxo": "Esfera de vidro de 0,5 kg. A até 18 metros dela, uma palavra de comando a faz emitir o truque Luz ou a magia Luz do Dia (esta, uma vez por dia). Com uma ação bônus, ela passa a flutuar a até 1,5 metro do chão e segue você, mantendo-se a no máximo 18 metros.",
+            "Golpeadora Ígnea": "Adaga +2 sempre quente que causa 2d6 de fogo extra. Sintonizado, você fala ignan, tem resistência a fogo e pode conjurar Dominar Monstro em elementais do fogo, entre outros poderes ligados ao fogo.",
+            "Gota de Nutrição": "Derrete na língua e alimenta tanto quanto 1 dia de provisões.",
+            "Gota de Refrescância": "Jogada num líquido, transforma até meio litro dele em água fresca e gelada. Não funciona com líquidos mágicos nem com venenos.",
+            "Granada Atordoante": "Arremessada a até 18 metros (36 com lançador), solta uma névoa de sono numa esfera de 6 metros. Quem falhar no teste de resistência desmaia e fica incapacitado por 1 hora, acordando se sofrer dano ou for sacudido.",
+            "Granada de Concussão": "Arremessada a até 18 metros (36 com lançador), explode numa esfera de energia de 6 metros: teste de Destreza CD 15, 8d8 de dano de energia, metade se passar.",
+            "Grimório Arcano": "Livro que serve de grimório e foco arcano e dá +1, +2 ou +3 (conforme a raridade) nos ataques com magia e na CD das magias de mago. Quando você usa Recuperação Arcana, recupera um círculo de magia a mais.",
+            "Grimório Duradouro": "Nem o livro nem o que está escrito nele podem ser danificados por fogo ou água, e ele não envelhece com o tempo.",
+            "Grimório Infinito": "Vestígio da Divergência que fica mais forte com o seu nível. É um grimório de páginas infinitas que também serve de foco arcano e aumenta em 1 o número de magias de mago que você prepara. Nos níveis 9 e 14, ganha poderes de dunamancia.",
+            "Harpa de Anstruth": "Magias próprias deste instrumento: Controlar o Clima, Curar Ferimentos (5º círculo) e Muralha de Espinhos.",
+            "Harpa de Oilamh": "Magias próprias deste instrumento: Confusão, Controlar o Clima e Tempestade de Fogo.",
+            "Harpa Dourada da Abundância": "Harpa encantada que ganha vida, fala, canta e toca sozinha quando alguém chega perto. Para se sintonizar, você precisa convencê-la de que é digno com um teste de Carisma (Atuação) CD 15 ou (Persuasão) CD 20. Depois disso, ela concede poderes de música e fartura.",
+            "Hazirawn": "Espada grande do Culto do Dragão. Mesmo sem sintonia, é +1 e causa 1d6 de dano necrótico extra; sintonizado, vira +2 e o dano necrótico extra sobe para 2d6. Também guarda algumas magias que você pode conjurar.",
+            "Herética": "Espada +3 com 6 cargas (recupera 1d4 + 1 ao amanhecer). Uma vez por turno, ao acertar, 1 carga força o alvo a passar num teste de Constituição CD 17 ou ficar paralisado. Tem outros poderes que também usam as cargas.",
+            "Ícone de Ravenloft": "Estatueta de prata de 10 kg. Quem estiver a até 9 metros dela fica sob Proteção contra o Bem e o Mal contra corruptores e mortos-vivos. Quem está sintonizado, de boa tendência, pode conjurar Augúrio sem componentes e usar outros poderes de cura e contra mortos-vivos.",
+            "Iluminadora": "Maça +1. Com a palavra de comando, a cabeça dela brilha e, enquanto brilha, causa 2d10 de dano radiante extra em mortos-vivos. Uma vez por dia, com uma ação bônus, você conjura Luz do Dia (com luz solar) num ponto a até 9 metros.",
+            "Incensário do Devoto": "Mangual que causa 1d8 de dano radiante extra. Uma vez por dia, com uma ação bônus, solta uma nuvem de incenso de 3 metros por 1 minuto, e no começo de cada turno seu você e todos dentro dela recuperam 1d4 pontos de vida.",
+            "Insígnia dos Garras": "Insígnia do Culto do Dragão. Enquanto a usa, você ganha +1 nas jogadas de ataque e dano com ataques desarmados e armas naturais, e esses ataques contam como mágicos.",
+            "Instrumento de Escrita": "Tem 3 cargas. Enquanto toca, com uma ação bônus e 1 carga você escreve uma mensagem mágica de até seis palavras numa superfície não mágica a até 9 metros; bardos podem escrever mais sete palavras e fazê-la brilhar. A mensagem some com Dissipar Magia ou depois de 24 horas. Recupera as cargas ao amanhecer.",
+            "Instrumento de Ilusões": "Enquanto você toca, aparecem efeitos visuais ilusórios e inofensivos (notas no ar, borboletas, neve caindo) numa esfera de 1,5 metro ao redor; para bardos, o raio é de 4,5 metros. As imagens não têm som nem substância e somem quando a música para.",
+            "Instrumentos dos Bardos": "Instrumentos lendários que só bardos sintonizam. Todos permitem conjurar Voo, Invisibilidade, Levitação e Proteção contra o Bem e o Mal, além das magias próprias de cada um, cada magia uma vez por dia. Quem tocar sem estar sintonizado faz um teste de Sabedoria CD 15 ou sofre 2d4 de dano psíquico.",
+            "Irmão das Sombras": "Simbionte que se funde à sua testa. Com uma ação bônus, ele envolve você numa sombra: testes de Percepção para vê-lo têm desvantagem e você tem vantagem em Furtividade. Quando é atingido, sua reação e um Dado de Vida somam o resultado do dado à sua CA até o fim do próximo turno. Não sai enquanto houver sintonia.",
+            "Jarro de Alquimia": "Jarro de cerâmica de 6 kg. Com uma ação, você escolhe um líquido da lista (ácido, veneno básico, cerveja, mel, maionese, óleo, vinagre, água doce, água salgada ou vinho) e ele produz uma quantidade fixa dele, que você derrama com outra ação. Recarrega ao amanhecer.",
+            "Lâmina Cristal": "Espada que causa 1d8 de dano radiante extra. Tem 3 cargas (recupera 1d3 ao amanhecer): ao acertar, 1 carga faz você recuperar pontos de vida iguais ao dano radiante causado.",
+            "Lâmina da Carnificina": "Arma +3 que causa 2d10 de dano necrótico extra a cada acerto. Você também pode gastar Dados de Vida para somar o resultado às jogadas de ataque e de dano com ela.",
+            "Lâmina da Lua": "Espada longa élfica que escolhe seu dono por toda a vida. A sintonia exige um ritual num trono ou templo élfico; se a espada rejeitar você, passa 24 horas com desvantagem em tudo. Se aceitar, cada runa na lâmina dá +1 no ataque e dano e uma propriedade especial, e uma runa nova surge a cada novo dono.",
+            "Lâmina da Verdade": "Espada longa +3 senciente, que guarda a consciência de um antigo herói e compartilha emoções com você. Causa 2d10 de dano radiante extra em aberrações e, quando ela quer, dá visão verdadeira de 9 metros e outros poderes.",
+            "Lâmina de Acheron": "Espada +1 que deixa você imune a efeitos que expulsam mortos-vivos. Uma vez por dia, com uma ação, dá a você 1d4 + 4 pontos de vida temporários, e também uma vez por dia, ao acertar, faz o alvo ter desvantagem no próximo teste de resistência.",
+            "Lâmina de Espelhos Quebrados": "Vestígio da Divergência senciente, caótico e mau (Int 21, Sab 24, Car 24), que lê a mente de quem a empunha e incentiva atitudes imprudentes. Pode abandonar o dono se for usada para o bem. Fica mais forte nos níveis 9 e 14.",
+            "Lança da Ruína": "Vestígio da Divergência senciente, caótico e mau (Int 20, Sab 16, Car 22), feito do osso de um dragão de ouro ancião e gravado com um hino a Gruumsh. Permite falar abissal e orc e fica mais forte nos níveis 9 e 14.",
+            "Lança do Deus da Luz": "Lança +3 que causa 3d8 de dano radiante extra. Quem venera um deus do sol ou da luz ganha mais poderes conforme sobe de nível, como 15 pontos de vida temporários a cada amanhecer e propriedades de artefato.",
+            "Lança do Dragão": "Lança (de infantaria ou de montaria) +3 forjada para caçar dragões. Contra dragões, causa dano extra e tem outros poderes.",
+            "Lanche-rápido": "Espada grande vorpal +3 e senciente, de tendência caótica e boa, que ignora resistência a dano cortante. Quando você tira 20 no d20 contra uma criatura que tenha cabeça, corta uma das cabeças dela; se a criatura não puder ser decapitada, sofre 6d8 de dano cortante extra.",
+            "Lanterna de Rastreamento": "Lanterna com capuz comum: 6 horas com meio litro de óleo, luz plena em 9 metros. Cada uma é ligada a um tipo de criatura, e a chama fica verde quando há uma delas a uns 90 metros, sem mostrar onde ela está.",
+            "Lanterna Maravilhosa de Daoud": "Lanterna alimentada com pó de gemas (vem com 10.000 po de combustível e queima 10.000 po por ano, até 100.000 po). Tem propriedades aleatórias de artefato e luzes com efeitos mágicos diferentes.",
+            "Leme de Spelljammer": "Cadeira mágica que move naves de 1 tonelada ou mais. Sentado e concentrado, você pilota a nave pelo espaço, ar ou água e, longe de outros corpos grandes no espaço, faz ela viajar a velocidades enormes, cerca de 160 milhões de km por dia.",
+            "Librama de Almas e Carne": "Grimório e foco arcano de mago com Animar Mortos, Círculo da Morte, Vitalidade Falsa, Dedo da Morte, Falar com os Mortos, Invocar Morto-Vivo e Toque Vampírico. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de necromancia, e outra dá a você uma aparência de morto-vivo por 10 minutos.",
+            "Lingote da Runa Skold": "Barra de ferro que dá +1 na CA. Com uma ação bônus, você escolhe outra criatura a até 9 metros: até o fim do seu próximo turno, todo dano que ela sofrer cai para 1, e você recebe metade do dano que foi evitado, sem poder reduzi-lo.",
+            "Lira de Canção da Sereia": "Com uma ação, você toca a lira e conjura Amizade Animal, Cativar, Enfeitiçar Pessoa ou Sugestão, com CD 13. Cada magia só pode ser usada uma vez por dia.",
+            "Lira de Cli": "Magias próprias deste instrumento: Moldar Rochas, Muralha de Fogo e Muralha de Vento.",
+            "Lira de Construção": "Permite conjurar Consertar com uma ação. Como reação, quando um objeto ou estrutura que você vê a até 90 metros sofre dano, você o torna imune a esse tipo de dano até o seu próximo turno.",
+            "Livro da Escuridão Perversa": "Compêndio de toda a magia maligna conhecida. Absorver o conteúdo exige 80 horas de estudo, e criaturas não malignas que se sintonizam podem ter a tendência corrompida (teste de Carisma). Dá conhecimento proibido, propriedades aleatórias de artefato e poderes sombrios.",
+            "Livro dos Grandes Feitos": "Tratado sagrado que só criaturas de boa tendência conseguem usar. Depois de lido, dá benefícios permanentes de bondade e sabedoria e então desaparece, indo para outro canto do multiverso que precise de luz.",
+            "Luvas de Armazenamento": "Com uma ação bônus, você guarda num espaço extradimensional da luva um objeto de até 9 kg que esteja segurando, e com outra ação bônus o traz de volta para a mão vazia.",
+            "Luvas do Charlatão": "Com uma ação, você cria na palma da mão uma imagem ilusória pequena, que dura até 1 minuto enquanto você mantiver a concentração. Tocar na imagem revela que ela é falsa.",
+            "Luvas do Ladrão": "Ficam invisíveis quando calçadas e dão +5 nos testes de Destreza (Prestidigitação) e nos testes de Destreza para abrir fechaduras.",
+            "Maça da Coroa Negra": "Vestígio da Divergência senciente, leal e mau (Int 20, Sab 12, Car 18). Funciona como maça +1, permite falar infernal e ganha poderes infernais com uma palavra de comando. Fica mais forte nos níveis 9 e 14.",
+            "Machado de Annam": "Machado do pai dos gigantes, que só sintoniza com criaturas Grandes ou maiores e ajusta o próprio tamanho a quem o usa. É +3, causa dano de energia extra e tem poderes ligados à origem dos gigantes.",
+            "Machado do Lenhador": "Machado +1. Contra plantas (comuns ou criaturas planta) e objetos de madeira soltos, causa 2d6 de dano cortante extra.",
+            "Machado dos Lordes Anões": "Machado +3 forjado para o primeiro rei anão. Dá poderes especiais a anões, como visão no escuro e convocar um elemental da terra, e tem propriedades aleatórias de artefato. Quem não for anão sofre efeitos negativos ao usá-lo.",
+            "Machado Grande de Gurt": "Machado grande +1 do antigo jarl dos gigantes do gelo, Gurt. Brilha como uma tocha quando a temperatura ao redor cai abaixo de -18 °C.",
+            "Machado Sanguinário": "Machado +2 que pertenceu a Grog Strongjaw. Causa 1d6 de dano necrótico extra em criaturas que não sejam constructos nem mortos-vivos, e quando você derruba uma delas a 0 pontos de vida ganha 10 pontos de vida temporários.",
+            "Malha do Efreeti": "Cota de malha que dá +3 na CA, imunidade a fogo e a capacidade de entender e falar primordial. Você também pode ficar em pé e andar sobre rocha derretida como se fosse chão firme.",
+            "Malhete da Runa Venn": "Com ele em mãos, ataques contra você têm desvantagem no começo de cada combate, até o seu primeiro turno. Uma vez por descanso longo, bater o malhete num ponto faz quem ferir outra criatura a até 18 metros dali, no minuto seguinte, sofrer dano psíquico igual a metade do dano causado. Sua magia pode ser transferida para um lugar ao traçar a runa.",
+            "Malho Espancador": "Vestígio da Divergência senciente, neutro e mau (Int 18, Sab 15, Car 19). Funciona como martelo de guerra +1, permite falar abissal e infernal e pode causar 2d6 de dano extra ao acertar. Fica mais forte nos níveis 9 e 14.",
+            "Mandolim de Canaith": "Magias próprias deste instrumento: Curar Ferimentos (3º círculo), Dissipar Magia e Proteção contra Energia (só eletricidade).",
+            "Mangual de Tiamat": "Mangual +3 com cinco cabeças de dragão cromático. Cada acerto causa 5d4 de dano extra de um tipo que você escolher (ácido, frio, fogo, eletricidade ou veneno). Com uma ação e uma palavra de comando, as cabeças sopram chamas multicoloridas num cone de 30 metros.",
+            "Manopla Rastejante": "Simbionte que se funde à sua mão e antebraço. Seus ataques desarmados podem ser feitos com as garras dela, causando 1d6 + Força de dano cortante, e você pode projetar uma cópia ectoplasmática da manopla para mexer em objetos à distância.",
+            "Manoplas da Fúria Flamejante": "Com as duas manoplas, qualquer arma não mágica que você segura conta como mágica. Uma vez por dia, com uma ação bônus, você envolve em chamas uma ou duas armas corpo a corpo que estiver segurando: cada uma causa 1d6 de fogo extra até ser embainhada ou largada.",
+            "Manto da Natureza": "O manto muda de cor e textura para se misturar ao terreno. Serve de foco arcano para magias de druida e patrulheiro, e em áreas de escuridão leve você pode se esconder com uma ação bônus mesmo sendo observado.",
+            "Manto de Invisibilidade": "Com uma ação, você puxa o capuz e fica invisível, junto com o que carrega; outra ação o tira. O manto funciona por até 2 horas no total, gastas de minuto em minuto, e recupera 1 hora a cada 12 horas sem uso.",
+            "Manto do Cão Infernal": "Com uma ação, transforma você num cão infernal por até 1 hora (como Metamorfose), e você volta com uma ação bônus. É amaldiçoado: a partir do sexto uso, cada transformação exige um teste de Carisma CD 15, e se falhar você fica preso na forma; 6 horas seguidas assim tornam a mudança permanente.",
+            "Manto Élfico (piwafi)": "Capa de seda de aranha feita pelos drow. Funciona como um Manto Élfico: com o capuz levantado, quem tenta ver você tem desvantagem e você tem vantagem em Furtividade. Perde a magia se ficar 1 hora seguida sob a luz do sol.",
+            "Manto Élfico (piwafi) de Resistência a Fogo": "Funciona como um Manto Élfico e ainda dá resistência a dano de fogo. Perde a magia se ficar 1 hora seguida sob a luz do sol.",
+            "Manuscrito Duplícito": "Grimório disfarçado de romance, que muda de aparência e de enredo com uma ação. Serve de foco arcano de mago e traz Terreno Alucinógeno, Imagem Maior, Reflexos, Despistar, Aura Mágica de Nystul, Força Fantasmagórica e Imagem Silenciosa. Tem 3 cargas (recupera 1d3 ao amanhecer) para trocar magias preparadas por outras de ilusão e impor desvantagem ao investigar suas ilusões.",
+            "Martelo do Deus da Forja": "Martelo de guerra +3 que causa 3d10 de dano de fogo extra. Quem venera um deus da forja ganha mais poderes conforme sobe de nível, incluindo propriedades de artefato.",
+            "Máscara Aereni": "Máscara ligada aos espíritos de uma linhagem nobre de Aerenal, que só aceitam sintonia de quem julgam digno. Ela tem duas perícias definidas quando é criada, e você soma 1d4 aos testes feitos com elas.",
+            "Máscara de Bobo da Corte": "Foco arcano que dá +3 nos ataques com magia e na CD das magias que usam Carisma. Uma vez por dia, quando alguém acerta você com um ataque, sua reação faz você sumir numa nuvem de fumaça e faíscas coloridas.",
+            "Máscara de Dragão": "Cada máscara é um item lendário ligado a um tipo de dragão cromático, e usar várias conta como uma única sintonização. Com qualquer uma delas, você tem resistência ao tipo de dano da máscara (imunidade se já tiver resistência), pode somar o Carisma à CA sem armadura, fala dracônico, recarrega mais rápido seu sopro de dragão e uma vez por dia transforma uma falha num teste de resistência em sucesso.",
+            "Máscara do Dragão Azul": "O tipo de dano desta máscara é eletricidade, e criaturas que sofrem dano elétrico seu não podem usar reações até o começo do próximo turno delas.",
+            "Máscara do Dragão Branco": "O tipo de dano desta máscara é frio, e ela traz poderes próprios dos dragões brancos.",
+            "Máscara do Dragão Negro": "O tipo de dano desta máscara é ácido, e com ela você respira debaixo d'água.",
+            "Máscara do Dragão Verde": "O tipo de dano desta máscara é veneno, e com ela você respira debaixo d'água.",
+            "Máscara do Dragão Vermelho": "O tipo de dano desta máscara é fogo, e o dano de fogo que você causa faz criaturas e objetos inflamáveis pegarem fogo.",
+            "Máscara do Pária": "Elmo alado que dá deslocamento de voo de 18 metros e vantagem nas jogadas de iniciativa.",
+            "Mastro da Diminuição": "Com uma palavra de comando, esta vara de 3 metros encolhe para 30 cm sem mudar de peso. Outra palavra a faz voltar ao tamanho normal, se houver espaço.",
+            "Mastro da Pescaria": "Com uma palavra de comando, esta vara de 3 metros vira uma vara de pesca com anzol, linha e molinete. Repetir a palavra desfaz a transformação.",
+            "Matadora de Devoradores": "Machado grande +2 que causa 1d12 de dano cortante extra em aberrações. Se a aberração estiver agarrando alguém, ela faz um teste de Força CD 20 ou solta todos.",
+            "Matadora de Orcs": "Machado +2 que só sintoniza com anões, guerreiros ou paladinos. Num crítico contra um orc, o orc faz um teste de Constituição CD 17 ou cai a 0 pontos de vida, e orcs não conseguem surpreender você enquanto estiver consciente.",
+            "Matadora de Zumbis": "Arma +1 que causa 1d8 de dano extra em mortos-vivos, e o morto-vivo atingido tem desvantagem nos testes contra efeitos que expulsam mortos-vivos até o seu próximo turno.",
+            "Matalotok": "Martelo antigo de Thrym, o deus dos gigantes do gelo, sempre envolto em névoa. Enquanto o segura, você é imune a frio, e sempre que causa dano com ele, uma explosão de frio numa esfera de 9 metros causa 3d6 de dano de frio às outras criaturas.",
+            "Membro Protético": "Substitui uma mão, braço, pé, perna ou parte parecida que você perdeu e funciona igual à original. Você o coloca ou tira com uma ação, e ninguém consegue removê-lo contra a sua vontade.",
+            "Mensageiro Final": "Pequeno homúnculo que um forjado integra ao próprio corpo com uma ação. Ele guarda uma mensagem de até 25 palavras, que você pode trocar com uma ação, e foi feito para levar recados entre soldados durante a guerra.",
+            "Mimir": "Caveira mecânica de 5 kg cheia de conhecimento. Com uma ação bônus, você a joga no ar e ela flutua ao seu lado (CA 22, 25 PV). Flutuando, ela pode conjurar Lenda e Saber e responde em voz alta.",
+            "Mochila Balão": "Com uma ação, você infla o balão e ganha o efeito de Levitação em si mesmo por 10 minutos, sem concentração. Se estiver caindo, pode usar a reação para inflá-lo e ganhar Queda Suave, descendo devagar até 18 metros.",
+            "Moeda de Alma": "Moeda de ferro infernal que prende uma alma. Tem 3 cargas, e com uma ação e 1 carga você suga um pouco da essência da alma e recupera 1d10 pontos de vida, ou faz uma pergunta que ela é obrigada a responder.",
+            "Moeda de Sondagem": "Moeda de cobre que brilha fraco em 1,5 metro. Quando cai, faz um som que muda a cada 1,5 metro de queda, então quem ouve sabe a que profundidade ela parou.",
+            "Morteiro de Mizzium": "Tubo de 60 cm com 4 cargas (recupera 1d4 ao amanhecer). Com uma ação e 1 carga, lança mizzium derretido num cone de 9 metros: teste de Destreza CD 15, 5d4 de fogo, metade se passar.",
+            "Munição Colossal": "A criatura atingida por esta munição precisa passar num teste de Força CD 10 ou cai no chão.",
+            "Munições Arcanas": "Saquinho com 1d4 + 4 munições +2 que perdem a magia depois de acertar. Role 1d4 para o tipo do saquinho: entre os efeitos estão banir o alvo (teste de Carisma CD 15, como Banimento) e causar 2d8 de dano elétrico extra.",
+            "Mythallar": "Globo enorme que brilha com luz plena em 90 metros e puxa magia da Trama, usado pelos antigos netherenses para manter cidades voadoras e alimentar itens. Para se sintonizar, é preciso meditar perto dele durante um descanso curto, e até oito criaturas podem estar sintonizadas ao mesmo tempo.",
+            "Navalha Negra": "Espada grande +3 senciente e faminta por almas. Quando derruba uma criatura a 0 pontos de vida, mata e devora a alma dela (a não ser que seja constructo ou morto-vivo) e você ganha pontos de vida temporários iguais aos pontos de vida máximos da vítima, que duram 24 horas.",
+            "Óculos para Leitura de Objetos": "Dão vantagem nos testes de Inteligência (Arcanismo) para descobrir informações sobre uma criatura ou objeto que você vê. Uma vez por dia, também permitem conjurar Identificação.",
+            "Olho e Mão de Vecna": "Relíquias do lich Vecna. Para usar o olho, você arranca o seu e põe o artefato no lugar; para usar a mão, corta a sua mão esquerda. O olho dá visão de raio X e outros poderes, a mão dá força e toques mortais, cada um com propriedades aleatórias, e o preço é sombrio: perder a mão mata você.",
+            "Olho Errante": "Simbionte com um olho na ponta de um tentáculo, que se aloja no seu ombro. Exposto, ele soma 1d4 aos seus testes de Percepção e Investigação que dependem da visão. Estendido, o olho tem CA 20 e 6 pontos de vida.",
+            "Olhos de Ersatz": "Olho artificial que substitui um olho perdido e enxerga como um olho normal. Enquanto estiver na órbita, só você pode retirá-lo.",
+            "Onda": "Tridente +3 senciente que só aceita quem venera um deus do mar. Num acerto crítico, o alvo sofre dano necrótico extra igual à metade dos pontos de vida máximos dele. Também permite respirar debaixo d'água e tem outros poderes marinhos.",
+            "Opala da Runa Ild": "Com uma ação, incendeia um objeto inflamável a até 3 metros e, com outra, apaga as chamas que quiser a até 3 metros. Também dá resistência a frio. Sua magia pode ser transferida para uma arma ou armadura traçando a runa ild nela.",
+            "Orbe da Água": "Ao detonar, cria uma tempestade torrencial de 24 horas. Rios, córregos e lagos próximos transbordam depois de 2d10 horas de chuva, subindo 3 metros e inundando o que estiver no caminho.",
+            "Orbe da Runa Stein": "Com uma ação bônus, por 1 minuto você tem vantagem para resistir a ser movido, e inimigos que chegarem a até 3 metros fazem um teste de Força CD 12 ou param ali. Também impede que você seja petrificado e permite conjurar Mesclar-se às Rochas uma vez por descanso. A magia pode ser transferida para um lugar ao traçar a runa.",
+            "Orbe da Terra": "Ao detonar, a área sofre os efeitos de Terremoto por 1 minuto (CD 18), e a orbe some.",
+            "Orbe de Devastação": "Bomba elemental criada num nodo ou plano elemental, num ritual de 1 hora que consome 20.000 po em componentes. Tem 30 cm e 5 kg e explode 1d100 horas depois de criada, liberando o efeito do seu elemento numa área enorme ao redor.",
+            "Orbe de Murgaxor": "Orbe senciente e maligno (Int 20, Sab 16, Car 16) que ouve e enxerga no escuro a 9 metros. A qualquer momento, ele pode conjurar Sugestão (CD 17) em você ou em quem o tocou nas últimas 24 horas, e tem poderes de maldição.",
+            "Orbe de Navegação": "Esfera de mitral de 2,1 metros que flutua dentro de um castelo das nuvens. Enquanto estiver sintonizado e dentro do castelo, você controla a altitude e o movimento dele.",
+            "Orbe do Fogo": "Ao detonar, cria uma onda de calor, fogo e seca por 24 horas, com as regras de calor extremo na área. A cada hora, há 10% de chance de começar um incêndio em algum ponto ao redor.",
+            "Orbe do Professor": "Esfera de quartzo senciente (Inteligência 18) que fala, lê e entende quatro idiomas e vê e ouve a até 18 metros. Não tem vontade própria nem entra em conflito com o dono, e é especialista em quatro áreas de estudo, recebendo bônus alto para lembrar conhecimentos delas.",
+            "Orbe do Vento": "Ao detonar, cria uma tempestade de vento de 1 hora. Quem termina o turno exposto ao vento faz um teste de Constituição CD 18 ou sofre 1d4 de dano de concussão por detritos.",
+            "Orbe do Véu": "Aumenta sua Sabedoria em 2 (máximo 22), dá visão no escuro de 18 metros (ou soma 18 metros à que você já tem) e vantagem nos testes de Sabedoria para encontrar portas e passagens secretas. É amaldiçoada, e quem se sintoniza não consegue se separar dela.",
+            "Orbe dos Dragões": "Globo de cristal de 25 cm que guarda a essência de um dragão maligno. Sintonizar exige vencer a vontade dele. Permite chamar e controlar dragões, conjurar magias e tem propriedades aleatórias de artefato.",
+            "Ornitóptero de Voo": "Engenhoca de 12 kg que voa a 9 metros levando até 136 kg, seguindo suas instruções enquanto você pilota. Não consegue pairar, e se perder o piloto no ar, cai e fica 1d6 + 4 dias sem voar.",
+            "Papel de Pássaro": "Escreva uma mensagem de até cinquenta palavras na folha e diga o nome de uma criatura: o papel se dobra num passarinho de origami e voa até ela. Se for imobilizado ou chegar a 0 pontos de vida, vira cinzas.",
+            "Pedra da Sorte Maldita": "Você pode usá-la para ganhar vantagem num teste de habilidade, mas depois seus dois próximos testes de habilidade têm desvantagem. É amaldiçoada: só Remover Maldição desfaz a sintonia, e se você jogá-la fora ela se teleporta de volta para sua bolsa.",
+            "Pedra de Golorr": "Na verdade é um abolete chamado Golorr, transformado em pedra, que guarda segredos importantes de Águas Profundas. Tem uma propriedade benéfica e uma prejudicial aleatórias e 3 cargas (recupera 1d3 ao amanhecer) para magias de conhecimento.",
+            "Pedra de Sangue": "Diamante com o sangue de uma criatura dentro. Com uma ação, revela a distância e a direção da criatura viva mais próxima que seja parente de sangue de quem o sangue pertence.",
+            "Pedra Dissipadora": "Arremessada a até 9 metros, explode numa esfera de 3 metros e se destrói. Toda magia ou efeito mágico de 5º círculo ou menor na área termina.",
+            "Pedra Sensorial": "Guarda uma sensação de até 6 segundos que alguém a até 9 metros viveu; você grava usando a reação, e isso apaga a anterior. Com uma ação, você ou uma criatura que você escolher toca a pedra e sente a experiência como se fosse sua.",
+            "Pedras de Mensagem": "Par de pedras ligadas. Tocando uma delas, você usa uma ação para conjurar Enviar Mensagem para quem estiver com a outra. Depois de usada, não funciona de novo até o próximo amanhecer.",
+            "Peitoral de Kamvuul Norek": "Peitoral de adamante que dá +2 na CA e vantagem nos testes de resistência contra magias e efeitos mágicos. Se você resistir à Rajada Mental de um devorador de mentes ou de outra aberração, não sofre nada e o efeito volta contra ela.",
+            "Pelúcia Fofinha de Strixhaven": "Com uma ação, você a prende no braço, ombro ou perna, onde fica por 1 hora ou até você tirá-la. Uma vez por dia, com ela por perto, você ganha vantagem num teste de resistência para não ficar amedrontado ou para deixar de estar, decidindo antes de rolar.",
+            "Perfume do Encantamento": "Dose única. Com uma ação bônus você se perfuma e, por 1 hora, tem vantagem em testes de Carisma contra humanoides de nível de desafio 1 ou menor. Os afetados não percebem que houve magia.",
+            "Pergaminho de Azumar": "Pergaminho de conhecimento proibido que exige 30 dias de estudo, 8 horas por dia, e depois um teste de Inteligência (Arcanismo) CD 25. Se falhar, você sofre 16d10 de dano psíquico e só pode tentar de novo depois de mais 30 dias. Se passar, sua Inteligência aumenta e você ganha outros benefícios permanentes.",
+            "Pergaminho de Invocar Tarrasques": "Com uma ação, você lê o pergaminho e invoca uma tarrasque num ponto a até 1,6 km. Ela é hostil a todas as outras criaturas e só some quando chega a 0 pontos de vida.",
+            "Pergaminho de Proteção": "Ligado a um tipo de criatura (aberrações, bestas, celestiais, elementais, fadas, corruptores, plantas ou mortos-vivos). Lido com uma ação, cria por 5 minutos um cilindro invisível de 1,5 metro de raio ao seu redor que essas criaturas não conseguem atravessar nem afetar por dentro, salvo com um teste de Carisma CD 15.",
+            "Pergaminho do Cometa": "Com uma ação, você faz um cometa cair num ponto a até 1,6 km. O impacto abre uma cratera enorme, e cada criatura no raio da explosão faz um teste de Destreza CD 20 e sofre 30d10 de dano de energia, ou metade se passar.",
+            "Pérola da Noite": "Orbe negra de 15 cm. Em 10 minutos de ativação, faz anoitecer numa área de até 16 km ao redor, mesmo de dia, por 24 horas ou até você cancelar com uma ação. Depois de usada, leva um tempo para funcionar de novo.",
+            "Pílula do Céu Rosa": "Por 8 horas, dá vantagem nos testes e testes de resistência de Força, Destreza e Constituição, mas desvantagem nos de Inteligência, Sabedoria e Carisma. Quando o efeito passa, você ganha 1d6 - 1 níveis de exaustão.",
+            "Pingente de Máscara": "Uma vez por dia (recarrega ao pôr do sol), conjura Disfarçar-se, com CD 13 de Investigação para perceber o disfarce. O efeito pode durar 1 hora ou até 6 horas; se você escolher 6 horas, o pingente perde a magia quando ele acaba.",
+            "Piroconvergente": "Com uma ação, solta fogo num cone de 3 metros: quem estiver na área faz um teste de Destreza CD 13 e sofre 4d6 de fogo, ou metade se passar. Cada uso arrisca uma pane: role 1d10 e some o número de usos desde o último descanso longo, e um resultado alto faz o aparelho falhar e queimar você.",
+            "Pistola de Agulhas": "Pistola laser +1 com 10 cargas de uma célula de energia. Com uma ação e 1 carga, dispara uma rajada de agulhas de laser num cone de 18 metros: teste de Destreza CD 15, 8d10 de dano radiante, metade se passar.",
+            "Pistola Paralisante": "Pistola laser +2 com 10 cargas de uma célula de energia. No lugar de um ataque, 1 carga dispara um raio num alvo a até 18 metros, que faz um teste de Constituição CD 15 ou fica paralisado por 1 minuto, repetindo o teste ao fim de cada turno.",
+            "Píxies do Pandemônio": "Caixinha de madeira ornamentada. Quem a toca por 1 minuto ganha os benefícios de um descanso curto e o efeito de Bênção até o próximo descanso. Um minuto depois de aberta, ela some e reaparece fechada num lugar aleatório do mesmo plano.",
+            "Planador": "Disco de cristal de 1,5 metro. Você sobe nele e o ativa com uma ação; uma vez por turno, pode fazê-lo flutuar até 9 metros em qualquer direção. Carrega até 180 kg e cai se você pular dele.",
+            "Pluma de Invocar Chocobos": "Com uma ação, você joga a pena no chão e ela vira uma ave gigante amigável por 6 horas, que serve de montaria e obedece suas ordens. Ela volta a ser pena antes se chegar a 0 pontos de vida ou se você mandar, e depois disso só funciona de novo após 7 dias.",
+            "Pó das Fadas": "Dose única. Com uma ação, você o joga em si mesmo ou numa criatura a até 1,5 metro, que ganha deslocamento de voo de 9 metros e pode pairar por 1 minuto. Se ainda estiver no ar quando acabar, desce em segurança e cai de pé.",
+            "Pó de Corrosão": "Com uma ação, você o joga no ar e ele enche um cubo de 3 metros ao seu redor. Criaturas feitas total ou parcialmente de ferro na área fazem um teste de Constituição CD 13 e sofrem 4d8 de dano necrótico, ou metade se passarem.",
+            "Pó de Reencarnação": "Espalhado sobre um humanoide morto, ou mesmo sobre um pedaço dele, traz a criatura de volta num corpo novo, como a magia Reencarnação, se ela quiser voltar.",
+            "Poção da Majestade Draconiana": "Transforma você por 1 hora num dragão adulto do tipo da escama que flutua na poção. Você usa a ficha do dragão, mas mantém seus idiomas, personalidade e memórias.",
+            "Poção de Forma Aquosa": "Transforma você em água por 10 minutos: você se move a 9 metros andando ou nadando, passa por frestas onde a água passaria e pode ocupar o espaço de outras criaturas. Volta ao normal se ficar incapacitado.",
+            "Poção de Invulnerabilidade": "Por 1 minuto, você tem resistência a todos os tipos de dano.",
+            "Poção de Longevidade": "Reduz sua idade física em 1d6 + 6 anos, até o mínimo de 13. A cada nova poção bebida, há 10% de chance acumulativa de você envelhecer esses anos em vez de rejuvenescer.",
+            "Poção de Possibilidades": "Dá dois Fragmentos de Possibilidade que flutuam perto de você por 8 horas. Cada um pode ser gasto para rolar um d20 extra num ataque, teste ou teste de resistência seu, ou num ataque contra você, escolhendo o resultado. Por 24 horas, você não pode ganhar outros fragmentos.",
+            "Poção de Potência Máxima": "Na primeira magia de 5º círculo ou menor que causa dano que você conjurar no minuto seguinte, em vez de rolar os dados de dano você usa o valor máximo de cada um.",
+            "Poção de Sopro de Fogo": "Depois de bebê-la, você pode usar uma ação bônus para soprar fogo num alvo a até 9 metros: teste de Destreza CD 13, 4d6 de dano de fogo (metade se passar). O efeito acaba depois de três sopros ou 1 hora.",
+            "Poção de Tamanho do Gigante": "Por 24 horas, se você for Médio ou Pequeno, fica Enorme: sua Força vira 25, seus pontos de vida máximos e atuais dobram e seu alcance corpo a corpo aumenta 1,5 metro. O que você carrega cresce junto, e suas armas causam o triplo de dados de dano.",
+            "Poção de Vantagem": "Dá vantagem em um teste de habilidade, jogada de ataque ou teste de resistência à sua escolha feito na próxima hora.",
+            "Poção de Vitalidade": "Remove toda a exaustão e cura doenças e venenos. Pelas próximas 24 horas, cada Dado de Vida que você gastar cura o valor máximo.",
+            "Poderoso Servo de Leuk-0": "Máquina de 3 metros, de liga negra, que vira um constructo quando pilotada por dentro. Até duas criaturas se sintonizam com ela ao mesmo tempo, e a sintonia é perigosa. É uma arma de guerra poderosíssima, com ataques e resistência enormes.",
+            "Pólvora": "Explode se pegar fogo, cair ou for manuseada com descuido, causando dano de fogo num raio de 6 metros: 1d6 para um saquinho ou 9d6 para um barril. Um teste de Destreza CD 12 reduz o dano à metade.",
+            "Portadora da Alvorada": "Cabo de espada de onde, com uma ação bônus, brota uma lâmina de luz pura (e some do mesmo jeito). É +3 e causa 3d8 de dano radiante extra em mortos-vivos, e com uma ação você toca uma criatura e conjura Remover Maldição ou Restauração Menor.",
+            "Presa de Ferro": "Picareta de guerra +2 imune a ferrugem e ácido, que causa 1d8 de dano de trovão extra. Sintonizado, você fala terran, tem resistência a ácido, ganha sentido sísmico e pode conjurar Dominar Monstro em elementais da terra, entre outros poderes.",
+            "Presa do Guardião": "Adaga +1. Quem ela derruba a 0 pontos de vida morre e tem a alma arrancada, e só pode voltar à vida com Desejo.",
+            "Pulseira Benéfica de Bigby": "Pulseira com propriedades aleatórias de artefato (uma prejudicial menor, uma benéfica menor e duas maiores). Permite conjurar Mão de Bigby à vontade como magia de 9º círculo (+13 no ataque) sem concentração, além de outros poderes.",
+            "Rancor Lustroso": "Vestígio da Divergência senciente, caótico e mau (Int 13, Sab 15, Car 15). Funciona como rapieira +1, permite falar abissal, élfico e subcomum e dá visão no escuro de 18 metros (ou +18). Fica mais forte nos níveis 9 e 14.",
+            "Recipiente do Dragão Adormecido": "Uma vez por dia, se estiver vazio, uma ação bônus e a palavra de comando o enchem com cerveja, azeite, uma Poção de Cura ou uma Poção de Escalar. A poção criada perde a magia se não for bebida em 24 horas.",
+            "Recipiente do Dragão Ascendente": "Uma vez por dia, se estiver vazio, uma ação bônus e a palavra de comando o enchem com cerveja, azeite, hidromel, vinho, uísque, uma Poção de Cura Suprema, uma Poção de Escalar, uma Poção de Sopro de Fogo, uma Poção de Voo ou uma Poção da Majestade Draconiana. A poção perde a magia se não for bebida em 24 horas.",
+            "Recipiente do Dragão Desperto": "Uma vez por dia, se estiver vazio, uma ação bônus e a palavra de comando o enchem com cerveja, azeite, hidromel, uma Poção de Cura Maior, uma Poção de Escalar ou uma Poção de Sopro de Fogo. A poção perde a magia se não for bebida em 24 horas.",
+            "Recipiente do Dragão Vígil": "Uma vez por dia, se estiver vazio, uma ação bônus e a palavra de comando o enchem com cerveja, azeite, hidromel, vinho, uma Poção de Cura Superior, uma Poção de Escalar, uma Poção de Sopro de Fogo ou uma Poção de Voo. A poção perde a magia se não for bebida em 24 horas.",
+            "Robe das Serpentes": "O robe tem 1d4 + 3 serpentes estampadas. Com uma ação bônus, uma delas sai do tecido como uma serpente venenosa gigante, que age na sua iniciativa e obedece você. Cada serpente usada some da estampa.",
+            "Rosa Cromática": "Rosa de uma cor ligada a um tipo de dano (preta ácido, azul eletricidade, verde veneno, vermelha fogo, branca frio). Segurando-a, você tem resistência a esse dano; se sofrer mais de 10 dele de uma vez, ela se desfaz e você não sofre nada. Com uma ação, pode soprar as pétalas num cone de 6 metros: teste de Constituição CD 15, 3d10 desse tipo, e a rosa é destruída.",
+            "Roupa com Asas": "Tem 3 cargas e recupera todas ao amanhecer. Com uma ação bônus e 1 carga, você ganha deslocamento de voo de 9 metros até pousar, mas desce 1,5 metro ao fim de cada turno e cai direto no chão se não tiver voado pelo menos 9 metros na horizontal naquele turno.",
+            "Roupas do Remendo": "Roupas de viagem que se consertam sozinhas contra o desgaste do dia a dia. Partes destruídas não voltam.",
+            "Rubi do Mago da Guerra": "Encaixado numa arma simples ou marcial, pressionando os dois por 6 segundos, deixa você usar a arma como foco arcano. Só você pode tirá-lo, com uma ação, ou ele sai se a arma for destruída.",
+            "Sanfona do Folião": "Dá +2 na CD dos testes de resistência das suas magias de bardo. Uma vez por dia, com uma ação, conjura Dança Irresistível de Otto.",
+            "Sela de Cavaleiro": "Enquanto você está consciente nesta sela, ninguém consegue derrubá-lo da montaria contra a sua vontade, e ataques contra a montaria têm desvantagem.",
+            "Símbolo Sagrado do Corvo": "Símbolo sagrado de Baróvia com 10 cargas (recupera 1d6 + 4 ao amanhecer). Com uma ação bônus e 1 carga, ele brilha e vampiros e crias vampíricas a até 9 metros fazem um teste de Sabedoria ou ficam paralisados. Gastando mais cargas, também ajuda a expulsar mortos-vivos e emite luz solar.",
+            "Sinal de Luxon": "Quem toca este objeto e se concentra por 1 minuto ganha um Fragmento de Possibilidade, que flutua perto por 8 horas. Ele pode ser gasto para rolar um d20 extra num ataque, teste ou teste de resistência e escolher qual resultado usar.",
+            "Sino de Galho": "Foco arcano de druida ou bruxo com 3 cargas (recupera 1d3 ao amanhecer). Com uma ação bônus e 1 carga, os sininhos tocam se houver aberrações, celestiais, constructos, elementais, fadas, corruptores ou mortos-vivos a até 18 metros. Com uma ação e 1 carga, conjura Proteção contra o Bem e o Mal.",
+            "Sino do Exílio": "Uma vez por dia, com uma ação, conjura Banimento (CD 20). Se o alvo tiver 50 pontos de vida ou menos, falha automaticamente no teste.",
+            "Steel": "Espada longa +2 senciente e de bom coração (Int 8, Sab 11, Car 15), que vê e ouve a até 18 metros e odeia recuar de uma luta. Com uma ação, você toca um aliado caído com ela e conjura Revivificar.",
+            "Sussurro do Espião": "Chapéu que permite falar por telepatia com alguém que você conheça usando outro Sussurro do Espião a até 1,6 km. Com uma ação bônus, essa pessoa passa a ouvir tudo o que você ouve por 1 hora.",
+            "Tambor do Compositor": "Dá +1, +2 ou +3 (conforme a raridade) nos ataques com magia e na CD das suas magias de bardo. Uma vez por dia, com uma ação, você toca o tambor e recupera um uso de Inspiração Bárdica.",
+            "Tapa-olho do Patife": "Dá vantagem em testes de Percepção baseados na visão, anula a Sensibilidade à Luz Solar e protege contra magias que leem pensamentos ou detectam mentiras. Ninguém fala com você por telepatia sem permissão.",
+            "Tarokka de Almas da Mãe Luba": "Baralho de tarokka que guarda espíritos malignos presos entre as cartas. Tem propriedades aleatórias de artefato, e puxar cartas permite conjurar magias de adivinhação e outros efeitos ligados ao destino.",
+            "Tatuagem da Fúria Sanguinária": "A agulha mágica vira tatuagem na sintonização. Tem 10 cargas, que voltam ao amanhecer: ao acertar um ataque com arma, 1 carga causa 4d6 de dano necrótico extra e cura você no mesmo valor, e quando alguém fere você, sua reação e 1 carga permitem contra-atacar com vantagem.",
+            "Tatuagem da Garra Mística": "A agulha mágica vira tatuagem na sintonização. Seus ataques desarmados contam como mágicos e ganham +1 no ataque e no dano. Uma vez por dia, com uma ação bônus, por 1 minuto seus ataques corpo a corpo alcançam até 4,5 metros e causam 1d6 de dano de energia extra.",
+            "Tatuagem da Magia Forjada": "Tatuagem feita por uma agulha mágica que guarda uma magia de até 5º círculo. Você a conjura sem componentes materiais, e quando a magia termina a tatuagem some. O círculo da magia define a raridade, a CD e o bônus de ataque.",
+            "Tatuagem da Marca do Pendor das Sombras": "A agulha mágica vira tatuagem na sintonização. Dá visão no escuro de 18 metros e vantagem em Furtividade. Uma vez por dia, quando sofre dano, sua reação deixa você insubstancial por um instante e reduz esse dano à metade.",
+            "Tatuagem de Absorção": "A agulha mágica vira tatuagem na sintonização, e a cor dela define um tipo de dano ao qual você ganha resistência. Uma vez por dia, quando sofre esse dano, sua reação o anula e cura você em metade do valor.",
+            "Tatuagem de Barreira": "A agulha mágica vira tatuagem na sintonização. Enquanto você não usa armadura, ela define sua CA (os valores estão no nome de cada versão), e você ainda pode usar escudo.",
+            "Tatuagem de Fantasma": "A agulha mágica vira tatuagem na sintonização. Tem 3 cargas, que voltam ao amanhecer: com uma ação bônus e 1 carga, até o fim do seu próximo turno você atravessa criaturas e objetos como terreno difícil, ataques contra você têm desvantagem e você não pode ser agarrado nem impedido.",
+            "Tatuagem de Gavinhas Entrelaçadas": "A agulha mágica vira tatuagem na sintonização. Com uma ação, tentáculos de tinta saem dela e agarram uma criatura a até 4,5 metros: ela faz um teste de Força CD 14 ou sofre 3d6 de dano de energia e fica agarrada por você (escapa com uma ação e teste CD 14).",
+            "Tatuagem do Iluminador": "A agulha mágica vira tatuagem durante a sintonização. Com ela, você escreve com a ponta do dedo como se fosse uma caneta que nunca seca. Uma vez por dia, também pode tocar um texto de até uma página e deixá-lo invisível por 24 horas para todos, menos você e uma criatura que nomear.",
+            "Tatuagem do Mascarado": "A agulha mágica vira tatuagem durante a sintonização. Com uma ação bônus, você muda a cor e o desenho dela e a move para qualquer parte da pele. Uma vez por dia, também pode conjurar Disfarçar-se através dela.",
+            "Tatuagem do Poço de Vida": "A agulha mágica vira tatuagem na sintonização. Dá resistência a dano necrótico, e uma vez por dia, quando você cairia a 0 pontos de vida, fica com 1.",
+            "Tempero Delicioso": "Pó que deixa qualquer comida muito mais saborosa, mas embota os sentidos: quem come fica 1 hora com desvantagem em testes e testes de resistência de Sabedoria. Dá para seis porções.",
+            "Tesoura Cortadora de Destinos": "Funciona como adaga +2 e causa 1d6 de dano de energia extra. Ao acertar, você pode cortar o destino do alvo: até ele terminar um descanso longo, ataques contra ele são críticos com 19 ou 20.",
+            "Tesouras de Corte de Sombra": "Com uma ação, você corta a sombra de um humanoide a até 1,5 metro, que pode resistir com um teste de Carisma CD 15. A sombra solta fica no lugar até você, com uma ação bônus, controlá-la (ela se move 9 metros por superfícies, inofensiva e invisível no escuro) ou deixá-la livre.",
+            "Tintura de Humor": "Aplicada no corpo em 1 minuto, a pintura muda por 24 horas conforme o humor de quem a usa. Quem vê a pessoa pode fazer um teste de Sabedoria (Intuição) CD 10 para saber se ela está feliz, triste, com raiva, enojada, surpresa ou com medo, e por quê. Elfos têm vantagem no teste.",
+            "Tomo da Língua Quieta": "Grimório macabro ligado a Vecna, que serve de livro de magias e foco arcano. Uma vez por dia, com uma ação bônus, você conjura uma magia escrita nele sem gastar espaço e sem componentes verbais ou gestuais. Vecna, porém, pode sussurrar e tentar influenciar quem o usa.",
+            "Traje Espacial": "Leva 1 minuto para vestir ou tirar. Permite respirar sem ar, torna você imune a gases nocivos e dá deslocamento de natação igual ao seu deslocamento a pé debaixo d'água, ou de voo no vazio.",
+            "Tratado Fulminante": "Grimório e foco arcano de mago com Contingência, Bola de Fogo, Lufada de Vento, Pequena Cabana de Leomund, Mísseis Mágicos, Onda Trovejante e Muralha de Energia. Tem 3 cargas (recupera 1d3 ao amanhecer): uma troca uma magia preparada por outra de evocação, e outra soma 2d6 de dano de energia a um alvo de uma magia de evocação sua.",
+            "Tridente do Deus do Mar": "Tridente +3 que causa 2d10 de dano de frio extra. Quem venera um deus do mar ganha mais poderes conforme sobe de nível, como respirar debaixo d'água e nadar a 18 metros a partir do 5º nível.",
+            "Trombeta da Audição": "Encostada no ouvido, anula os efeitos de estar surdo e deixa você ouvir normalmente.",
+            "Trono de Illefarn": "Trono élfico de alabastro do antigo reino de Illefarn, com estátuas anãs encantadas nos cantos. Se ninguém estiver sintonizado com ele, o primeiro humanoide que se sentar se sintoniza automaticamente e passa a controlar os poderes do trono.",
+            "Trono do Crânio de Dragão": "Trono de obsidiana dos gigantes da tempestade, que flutua a 30 cm do chão, apoiado nos crânios de quatro dragões azuis anciões. Quem se senta nele sem estar ligado a um Cetro Regente fica paralisado num campo de força; quem tem o cetro usa os poderes do trono.",
+            "Varinha da Pirotecnia": "Tem 7 cargas. Com uma ação e 1 carga, solta uma explosão inofensiva de luzes coloridas num ponto a até 18 metros, com estalos que se ouvem a até 90 metros. Recupera 1d6 + 1 cargas ao amanhecer; ao gastar a última, role 1d20: com 1, ela se desfaz em fogos de artifício.",
+            "Varinha da Regência": "Tem 3 cargas. Com uma ação e 1 carga, você a agita e cria música de orquestra, que se ouve a até 18 metros enquanto continuar agitando. Recupera as cargas ao amanhecer; ao gastar a última, role 1d20: com 1, uma tuba toca triste e a varinha vira pó.",
+            "Varinha de Batalha": "Foco arcano para quem usa varinhas. Segurada com as duas mãos, permite conjurar truques com até o dobro do alcance; além do alcance normal, os ataques têm desvantagem e os alvos têm vantagem para resistir.",
+            "Varinha de Caretas": "Tem 3 cargas. Com uma ação e 1 carga, um humanoide a até 9 metros precisa passar num teste de Carisma CD 10 ou passa 1 minuto fazendo careta. Recupera as cargas ao amanhecer; ao gastar a última, role 1d20: com 1, ela vira uma Varinha de Sorrisos.",
+            "Varinha de Globos Viscosos": "Feita pelos drow, tem 7 cargas e recupera 1d6 + 1 à meia-noite. Com uma ação e 1 carga, lança um globo pegajoso num alvo a até 18 metros; se acertar, a gosma seca e deixa o alvo impedido por 1 hora.",
+            "Varinha de Inverno": "Tem 7 cargas e recupera 1d6 + 1 ao amanhecer. Com uma ação, conjura Raio de Gelo (+5 para acertar, sem carga), Nevasca (3 cargas) ou Tempestade de Gelo (4 cargas), com CD 15. Ao gastar a última carga, role 1d20: com 1, ela se desfaz em gelo.",
+            "Varinha de Retaliação": "Tem 4 cargas e recupera todas ao amanhecer. Quando uma criatura que você vê a até 18 metros causa dano a você, sua reação e 1 carga a obrigam a um teste de Destreza CD 13: 2d10 de dano elétrico se falhar, metade se passar.",
+            "Varinha de Sorrisos": "Tem 3 cargas. Com uma ação e 1 carga, um humanoide a até 9 metros precisa passar num teste de Carisma CD 10 ou passa 1 minuto sorrindo. Recupera as cargas ao amanhecer; ao gastar a última, role 1d20: com 1, ela vira uma Varinha de Caretas.",
+            "Varinha de Turimbar": "Com uma ação, faz sons ilusórios iguais aos de qualquer instrumento em que você seja proficiente, como o truque Ilusão Menor, saindo da varinha. Se for proficiente com a própria varinha, consegue tocar músicas que nenhum instrumento comum faz.",
+            "Varinha Falante": "Enquanto você a segura, sua voz e os sons que você faz ficam três vezes mais altos.",
+            "Vaso do Despertar": "Um arbusto comum plantado neste vaso de barro de 4,5 kg vira, depois de 30 dias, um arbusto desperto amigável a você. Sem ordens suas, ele não faz nada.",
+            "Vela das Profundezas": "A chama não se apaga embaixo d'água e continua dando luz e calor como uma vela comum.",
+            "Verme da Língua": "Simbionte que se aloja sob a sua língua. Com uma ação bônus, você ataca com ele como ataque desarmado (1d4 + Força ou Destreza de dano perfurante), e o alvo precisa passar num teste de Constituição CD 13 ou fica envenenado até o começo do seu próximo turno. Não pode ser removido enquanto houver sintonia.",
+            "Versos de Proteção": "Grimório trancado (CD 20 para abrir) que você pode lacrar com Tranca Arcana usando uma ação. Serve de foco arcano de mago e traz Tranca Arcana, Dissipar Magia, Globo de Invulnerabilidade, Glifo de Proteção, Santuário Particular de Mordenkainen, Proteção contra o Bem e o Mal e Símbolo. Tem 3 cargas (recupera 1d3 ao amanhecer) para trocar magias preparadas por outras de abjuração e dar pontos de vida temporários ao conjurar abjurações.",
+            "Véu de Vermes": "Vestígio da Divergência que fica mais forte com o seu nível. Dá vantagem em Percepção pelo olfato, imunidade a doenças e visão no escuro de 18 metros (ou +18), e com uma ação você se transforma em rato ou rato gigante, mantendo a mente. Nos níveis 9 e 14, ganha poderes de enxame.",
+            "Viseira de Danoth": "Vestígio da Divergência que fica mais forte com o seu nível. No começo, você enxerga normalmente no escuro, mágico ou não, até 18 metros, e tem vantagem em testes de Investigação e Percepção que dependem da visão. A partir do 9º nível, revela criaturas invisíveis, e no 14º ganha mais poderes de visão.",
+            "Vola’khesh": "Com uma ação bônus, você sussurra uma mensagem que todas as criaturas usando um vola'khesh ligado ao seu escutam, se estiverem a até 36 metros.",
+            "Vontade de Tiamat": "Vestígio da Divergência senciente, leal e mau (Int 14, Sab 15, Car 19). Funciona como picareta de guerra +1, permite falar dracônico e infernal e tem poderes ligados aos dragões. Fica mais forte nos níveis 9 e 14."
+        };
+
         const nomesRaridade = {
             comum: "Comum",
             incomum: "Incomum",
@@ -3601,39 +4151,180 @@
 
 
         // ==========================================
+        // FILTRO DE FONTES
+        // ==========================================
+        // Grupos em que os livros aparecem na lista de filtros.
+        // Um livro novo que não estiver em nenhum grupo entra em "Outros".
+        const gruposDeLivros = [
+            { titulo: "Livros de regras e suplementos", livros: ["DMG", "XGE", "TCE", "FTD", "BMT", "BGG"] },
+            { titulo: "Cenários", livros: ["EGW", "ERLW", "GGR", "MOT", "SCC", "AAG", "SatO"] },
+            { titulo: "Aventuras", livros: ["BGDIA", "CoS", "CM", "GoS", "HotDQ", "RoT", "IDRotF", "KftGV", "LMoP", "LoX",
+                                            "OotA", "PaBTSO", "PotA", "QftIS", "SKT", "TftYP", "VEoR", "WBtW", "WDH", "WDMM"] },
+            { titulo: "Semi-oficiais", livros: ["EXE"] }
+        ];
+        const livrosAgrupados = new Set(gruposDeLivros.flatMap(grupo => grupo.livros));
+        const livrosSemGrupo = Object.keys(livros).filter(codigo => !livrosAgrupados.has(codigo));
+        if (livrosSemGrupo.length) gruposDeLivros.push({ titulo: "Outros", livros: livrosSemGrupo });
+
+        const todosOsLivros = Object.keys(livros);
+
+        // A escolha de fontes fica guardada no navegador para a próxima visita
+        const CHAVE_DO_FILTRO = "perdencio-fontes";
+        let fontesAtivas = new Set(todosOsLivros);
+        try {
+            const salvo = JSON.parse(localStorage.getItem(CHAVE_DO_FILTRO));
+            if (Array.isArray(salvo)) fontesAtivas = new Set(salvo.filter(codigo => livros[codigo]));
+        } catch (erro) { /* sem armazenamento disponível: usa todas as fontes */ }
+
+        function salvarFiltro() {
+            try { localStorage.setItem(CHAVE_DO_FILTRO, JSON.stringify([...fontesAtivas])); } catch (erro) { }
+        }
+
+        // Quantos itens cada livro tem (aparece ao lado do nome na lista)
+        const itensPorLivro = {};
+        itens.forEach(item => itensPorLivro[item.livro] = (itensPorLivro[item.livro] || 0) + 1);
+        familias.forEach(familia => itensPorLivro[familia.livro] =
+            (itensPorLivro[familia.livro] || 0) + new Set(familia.versoes.map(versao => versao.nome)).size);
+
+
+        // ==========================================
         // MONTAGEM DAS TABELAS DE SORTEIO
         // ==========================================
         // Todos os itens de uma raridade têm a mesma chance de sair.
-        const tabelas = {};
-        Object.keys(nomesRaridade).forEach(raridade => tabelas[raridade] = []);
+        // As tabelas são montadas de novo sempre que o filtro de fontes muda.
+        let tabelas = {};
+        let familiasVariaveis = [];
 
-        itens.forEach(item => tabelas[item.raridade].push({ item }));
+        function montarTabelas() {
+            tabelas = {};
+            Object.keys(nomesRaridade).forEach(raridade => tabelas[raridade] = []);
 
-        familias.forEach(familia => {
-            Object.keys(nomesRaridade).forEach(raridade => {
-                const versoes = familia.versoes.filter(versao => versao.raridade === raridade);
-                if (versoes.length) tabelas[raridade].push({ familia, versoes });
+            itens.filter(item => fontesAtivas.has(item.livro))
+                .forEach(item => tabelas[item.raridade].push({ item }));
+
+            familias.filter(familia => fontesAtivas.has(familia.livro)).forEach(familia => {
+                Object.keys(nomesRaridade).forEach(raridade => {
+                    const versoes = familia.versoes.filter(versao => versao.raridade === raridade);
+                    if (versoes.length) tabelas[raridade].push({ familia, versoes });
+                });
             });
-        });
 
-        // Itens que mudam de raridade conforme a versão
-        const familiasVariaveis = familias.filter(familia =>
-            new Set(familia.versoes.map(versao => versao.raridade)).size > 1);
+            // Itens que mudam de raridade conforme a versão
+            familiasVariaveis = familias.filter(familia => fontesAtivas.has(familia.livro) &&
+                new Set(familia.versoes.map(versao => versao.raridade)).size > 1);
+        }
 
         // Contador de itens
-        const todosOsNomes = new Set([
-            ...itens.map(item => item.nome),
-            ...familias.flatMap(familia => familia.versoes.map(versao => versao.nome))
+        const nomesDosItens = lista => new Set([
+            ...lista.itens.map(item => item.nome),
+            ...lista.familias.flatMap(familia => familia.versoes.map(versao => versao.nome))
         ]);
-        const comDescricao = [...todosOsNomes].filter(nome => descricoes[nome] ||
-            familias.some(f => descricoes[f.nome] && f.versoes.some(v => v.nome === nome))).length;
-        document.querySelector('.contador').textContent =
-            `Banco de dados: ${todosOsNomes.size} itens oficiais e semi-oficiais, ${comDescricao} com descrição completa`;
+        const todosOsNomes = nomesDosItens({ itens, familias });
+
+        function atualizarContador() {
+            const ativos = nomesDosItens({
+                itens: itens.filter(item => fontesAtivas.has(item.livro)),
+                familias: familias.filter(familia => fontesAtivas.has(familia.livro))
+            });
+            document.querySelector('.contador').textContent = fontesAtivas.size === todosOsLivros.length
+                ? `Banco de dados: ${todosOsNomes.size} itens oficiais e semi-oficiais`
+                : `Banco de dados: ${ativos.size} de ${todosOsNomes.size} itens, nas fontes escolhidas`;
+        }
+
+        // Avisa no console se algum item ficou sem descrição e sem resumo
+        const temTexto = (tabela, nome) => tabela[nome] ||
+            familias.some(f => tabela[f.nome] && f.versoes.some(v => v.nome === nome));
+        todosOsNomes.forEach(nome => {
+            if (!temTexto(descricoes, nome) && !temTexto(resumos, nome)) console.warn(`Item sem descrição nem resumo: "${nome}"`);
+        });
 
         // Avisa no console se algum item aponta para um livro que não existe na tabela
         [...itens, ...familias].forEach(item => {
             if (!livros[item.livro]) console.warn(`Livro desconhecido em "${item.nome}": ${item.livro}`);
         });
+
+
+        // ==========================================
+        // LISTA DE FONTES NA TELA
+        // ==========================================
+        function montarListaDeFontes() {
+            const lista = document.getElementById('lista-fontes');
+            lista.innerHTML = gruposDeLivros.map(grupo => `
+                <fieldset class="grupo-fontes">
+                    <legend>${grupo.titulo}</legend>
+                    <div class="grupo-itens">
+                        ${grupo.livros.filter(codigo => livros[codigo]).map(codigo => `
+                            <label>
+                                <input type="checkbox" value="${codigo}" ${fontesAtivas.has(codigo) ? "checked" : ""}>
+                                <span>${escaparHtml(livros[codigo])} <span class="qtd">(${itensPorLivro[codigo] || 0})</span></span>
+                            </label>`).join("")}
+                    </div>
+                </fieldset>`).join("") + `
+                <div class="lista-acoes">
+                    <button type="button" class="link-botao" onclick="desmarcarTodasAsFontes()">Desmarcar todas</button>
+                </div>`;
+
+            lista.addEventListener('change', evento => {
+                const caixa = evento.target;
+                if (caixa.type !== 'checkbox') return;
+                if (caixa.checked) fontesAtivas.add(caixa.value);
+                else fontesAtivas.delete(caixa.value);
+                aplicarFiltro();
+            });
+        }
+
+        function aplicarFiltro() {
+            salvarFiltro();
+            montarTabelas();
+            atualizarContador();
+
+            document.querySelectorAll('#lista-fontes input').forEach(caixa => caixa.checked = fontesAtivas.has(caixa.value));
+
+            const todas = fontesAtivas.size === todosOsLivros.length;
+            const botaoTodas = document.getElementById('botao-todas');
+            botaoTodas.classList.toggle('ativo', todas);
+            botaoTodas.setAttribute('aria-pressed', String(todas));
+            document.getElementById('resumo-fontes').textContent =
+                todas ? `Usando todas as fontes (${todosOsLivros.length})`
+                : fontesAtivas.size === 0 ? "Nenhuma fonte escolhida"
+                : `Usando ${fontesAtivas.size} de ${todosOsLivros.length} fontes`;
+
+            // Raridades sem nenhum item nas fontes escolhidas ficam apagadas
+            document.querySelectorAll('.botoes button').forEach(botao => {
+                const raridade = botao.dataset.raridade;
+                botao.classList.toggle('vazio', !temItens(raridade));
+            });
+        }
+
+        const temItens = raridade => raridade === 'variavel' ? familiasVariaveis.length > 0 : tabelas[raridade].length > 0;
+
+        function marcarTodasAsFontes() {
+            fontesAtivas = new Set(todosOsLivros);
+            aplicarFiltro();
+        }
+
+        function desmarcarTodasAsFontes() {
+            fontesAtivas.clear();
+            aplicarFiltro();
+        }
+
+        function alternarListaDeFontes() {
+            const lista = document.getElementById('lista-fontes');
+            const botao = document.getElementById('botao-escolher');
+            lista.hidden = !lista.hidden;
+            botao.setAttribute('aria-expanded', String(!lista.hidden));
+            botao.textContent = lista.hidden ? "Escolher fontes" : "Fechar lista de fontes";
+        }
+
+        // Falas do mago quando a raridade não tem itens nas fontes escolhidas
+        const falasSemItens = [
+            "Revirei o baú inteiro e não achei nada disso nesses livros. Que tal liberar mais fontes?",
+            "Hum... nas fontes que você escolheu, essa gaveta está vazia!",
+            "Nada por aqui! Esses tomos não falam desse tipo de item."
+        ];
+
+        montarListaDeFontes();
+        aplicarFiltro();
 
 
         // ==========================================
@@ -3654,7 +4345,12 @@
         function montarResultado(escolha) {
             if (escolha.item) {
                 const item = escolha.item;
-                return { ...item, busca: item.ingles, paragrafos: descricoes[item.nome] || null };
+                return {
+                    ...item,
+                    busca: item.ingles,
+                    paragrafos: descricoes[item.nome] || null,
+                    resumo: resumos[item.nome] ? [resumos[item.nome]] : []
+                };
             }
             const { familia, versao } = escolha;
             const paragrafos = [
@@ -3668,7 +4364,8 @@
                 raridade: versao.raridade,
                 tipo: versao.tipo || familia.tipo,
                 busca: familia.ingles || versao.ingles,
-                paragrafos: paragrafos.length ? paragrafos : null
+                paragrafos: paragrafos.length ? paragrafos : null,
+                resumo: [resumos[familia.nome], versao.nome !== familia.nome ? resumos[versao.nome] : null].filter(Boolean)
             };
         }
 
@@ -3691,7 +4388,11 @@
             if (resultado.paragrafos) {
                 html += resultado.paragrafos.map(paragrafoEmHtml).join("");
             } else {
-                html += `<p class="sem-descricao">A descrição completa deste item está em ${escaparHtml(livro)}.</p>`;
+                if (resultado.resumo.length) {
+                    html += resultado.resumo.map(paragrafoEmHtml).join("");
+                } else {
+                    html += `<p class="sem-descricao">A descrição completa deste item está em ${escaparHtml(livro)}.</p>`;
+                }
             }
             // Link de busca no D&D Beyond pelo nome em inglês (sem a versão, ex.: "Ioun Stone: Strength" -> "Ioun Stone")
             if (resultado.busca) {
@@ -3708,6 +4409,17 @@
         let ultimoItem = null;
 
         function rolarItem(raridade) {
+            // Nenhum item dessa raridade nas fontes escolhidas
+            if (!temItens(raridade)) {
+                clearTimeout(timeoutRolagem);
+                document.getElementById('detalhes').style.display = "none";
+                const nomeDaRaridade = raridade === 'variavel' ? "variável" : nomesRaridade[raridade];
+                document.getElementById('resultado').innerHTML =
+                    `<span style="color: #888; font-size: 20px;">Nenhum item de raridade ${nomeDaRaridade} nas fontes escolhidas.</span>`;
+                falar(escolherFala(falasSemItens), VELOCIDADE_REACAO);
+                return;
+            }
+
             // Sorteia, tentando não repetir o item anterior
             let resultado;
             for (let tentativa = 0; tentativa < 10; tentativa++) {
